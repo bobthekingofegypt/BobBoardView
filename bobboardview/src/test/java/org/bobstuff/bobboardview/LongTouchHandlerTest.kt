@@ -32,7 +32,16 @@ class LongTouchHandlerTest {
         val activityController = Robolectric.buildActivity(Activity::class.java)
         val activity = activityController.get()
         view = View(activity)
-        longTouchHandler = LongTouchHandler(activity, { triggeredCallback = true; triggerCount += 1 })
+        longTouchHandler = LongTouchHandler(activity, object: OnLongTouchHandlerCallback {
+            override fun onClick(e: MotionEvent) {
+                //no-op
+            }
+
+            override fun onLongPress(e: MotionEvent) {
+                triggeredCallback = true
+                triggerCount += 1
+            }
+        })
         touchSlop = ShadowViewConfiguration.get(activity).scaledTouchSlop
     }
 
