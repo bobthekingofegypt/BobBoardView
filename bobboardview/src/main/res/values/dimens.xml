@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="bobboardview_max_scroll_distance_per_frame">5dp</dimen>
+</resources>
