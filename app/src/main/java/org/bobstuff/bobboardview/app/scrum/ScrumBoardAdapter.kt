@@ -2,8 +2,10 @@ package org.bobstuff.bobboardview.app.scrum
 
 import android.content.ClipData
 import android.content.Context
+import android.os.Parcelable
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -21,9 +23,17 @@ import java.util.*
 class ScrumBoardAdapter(val context: Context, val width: Int):
         BobBoardAdapter<ScrumBoardAdapter.ScrumListViewHolder>() {
     private val columns: MutableList<Column> = mutableListOf()
+    private val columnScrollPositions: MutableMap<Column, Parcelable> = mutableMapOf()
 
     override fun getItemCount(): Int {
         return columns.size
+    }
+
+    override fun onViewRecycled(holder: ScrumListViewHolder) {
+        val index = holder.adapterPosition
+        columnScrollPositions[columns[index]] = holder.recyclerView.layoutManager.onSaveInstanceState()
+
+        super.onViewRecycled(holder)
     }
 
     override fun onBindViewHolder(holder: ScrumListViewHolder, position: Int) {
@@ -44,6 +54,9 @@ class ScrumBoardAdapter(val context: Context, val width: Int):
                 holder.itemView.visibility = View.INVISIBLE
             }
         }))
+        if (columnScrollPositions.containsKey(column)) {
+            holder.recyclerView.layoutManager.onRestoreInstanceState(columnScrollPositions[column])
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScrumListViewHolder {

@@ -14,6 +14,7 @@ import android.widget.TextView
 import android.view.ViewGroup
 import android.view.LayoutInflater
 import android.view.View
+import org.bobstuff.bobboardview.app.reuse.ReuseSampleActivity
 import org.bobstuff.bobboardview.app.scrum.ScrumActivity
 import org.bobstuff.bobboardview.app.trello.BoardActivity
 
@@ -32,13 +33,14 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         recyclerView.addItemDecoration(DividerItemDecoration(recyclerView.context, LinearLayoutManager.VERTICAL))
 
-        val data = listOf("Trello style", "Plain board view")
+        val data = listOf("Trello style", "Scrum board view", "Large dataset, reuse")
         val adapter = MyRecyclerViewAdapter(this, data)
         adapter.setClickListener(object: ItemClickListener {
             override fun onItemClick(view: View, position: Int) {
                 when (position) {
                     0 -> startActivity(Intent(this@MainActivity, BoardActivity::class.java))
                     1 -> startActivity(Intent(this@MainActivity, ScrumActivity::class.java))
+                    2 -> startActivity(Intent(this@MainActivity, ReuseSampleActivity::class.java))
                 }
             }
         })

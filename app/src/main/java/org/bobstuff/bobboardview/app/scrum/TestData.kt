@@ -3,7 +3,7 @@ package org.bobstuff.bobboardview.app.scrum
 import org.bobstuff.bobboardview.R
 
 /**
- * Created by bob on 21/02/18.
+ * Created by bob
  */
 
 enum class Priority { LOW, MEDIUM, HIGH }
