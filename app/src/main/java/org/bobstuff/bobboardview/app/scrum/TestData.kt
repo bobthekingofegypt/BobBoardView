@@ -1,6 +1,6 @@
 package org.bobstuff.bobboardview.app.scrum
 
-import org.bobstuff.bobboardview.R
+import org.bobstuff.bobboardview.app.R
 
 /**
  * Created by bob

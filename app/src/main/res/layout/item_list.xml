@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout android:orientation="vertical"
     android:layout_width="@dimen/trello_item_list_width"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:animateLayoutChanges="false"
     android:paddingTop="10dp"
     android:paddingBottom="10dp"

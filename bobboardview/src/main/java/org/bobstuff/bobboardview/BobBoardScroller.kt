@@ -43,7 +43,7 @@ class BobBoardScroller(private val recyclerView: RecyclerView,
     private var accumulatedScrollX: Int = 0
     private val scrollRunnable: Runnable = object : Runnable {
         override fun run() {
-            Log.d("TEST", "MONKEY!!!!!")
+            //Log.d("TEST", "MONKEY!!!!!")
             if (scrollIfNecessary()) {
                 bobBoardScrollerCallback.onScrolled(accumulatedScrollX)
                 recyclerView.removeCallbacks(this)

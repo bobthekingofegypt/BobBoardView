@@ -9,7 +9,7 @@ import android.support.v7.widget.DividerItemDecoration
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.Toolbar
-import org.bobstuff.bobboardview.R
+import org.bobstuff.bobboardview.app.R
 import android.widget.TextView
 import android.view.ViewGroup
 import android.view.LayoutInflater

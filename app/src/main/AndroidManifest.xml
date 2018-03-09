@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.bobstuff.bobboardview">
+    package="org.bobstuff.bobboardview.app">
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
     <application
         android:allowBackup="true"
@@ -9,16 +11,16 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".app.trello.BoardActivity" />
-        <activity android:name=".app.MainActivity">
+        <activity android:name=".trello.BoardActivity" />
+        <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".app.scrum.ScrumActivity" />
-        <activity android:name=".app.reuse.ReuseSampleActivity"></activity>
+        <activity android:name=".scrum.ScrumActivity" />
+        <activity android:name=".reuse.ReuseSampleActivity"></activity>
     </application>
 
 </manifest>

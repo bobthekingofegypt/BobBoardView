@@ -5,13 +5,13 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.Toolbar
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
 import org.bobstuff.bobboardview.*
-import org.bobstuff.bobboardview.app.scrum.Project
-import org.bobstuff.bobboardview.app.scrum.ScrumBoardAdapter
-import org.bobstuff.bobboardview.app.scrum.ScrumColumnAdapterBobBoard
-import org.bobstuff.bobboardview.app.scrum.UserStory
+import org.bobstuff.bobboardview.app.R
+import org.bobstuff.bobboardview.app.scrum.*
 import org.bobstuff.bobboardview.app.util.DragOperation
 import org.bobstuff.bobboardview.app.util.getWindowSize
 import org.bobstuff.bobboardview.app.util.setStatusBarColor
@@ -26,11 +26,11 @@ class ReuseSampleActivity : AppCompatActivity(), BobBoardView.BobBoardViewListen
     private lateinit var boardView: BobBoardView
     private lateinit var boardAdapter: ScrumBoardAdapter
     private var project: Project = generateTestData()
-    private val currentDragOperation = DragOperation<UserStory>()
+    private val currentDragOperation = DragOperation<UserStory, Column>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_scrum)
+        setContentView(R.layout.activity_reuse_sample)
         setStatusBarColor(Color.parseColor("#2b2b2b"), false)
 
         val windowSize = getWindowSize()
@@ -42,6 +42,7 @@ class ReuseSampleActivity : AppCompatActivity(), BobBoardView.BobBoardViewListen
         boardView.setBoardAdapter(boardAdapter)
         boardView.setBoardViewListener(this)
         boardView.listRecyclerView.setScrollingTouchSlop(RecyclerView.TOUCH_SLOP_PAGING)
+        boardView.listRecyclerView.contentDescription = "column recycler"
 
         val listItemDecoration = BobBoardSimpleDividers((windowSize.x * 0.03).toInt(), BobBoardSimpleDividersOrientation.HORIZONTAL)
         boardView.listRecyclerView.addItemDecoration(listItemDecoration)
@@ -59,15 +60,17 @@ class ReuseSampleActivity : AppCompatActivity(), BobBoardView.BobBoardViewListen
     }
 
     override fun onListDragStarted(listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>) {
-        currentDragOperation.dragType = BobBoardView.DragType.LIST
-        currentDragOperation.listIndex = listViewHolder.adapterPosition
+        currentDragOperation.startListDrag(listViewHolder.adapterPosition)
     }
 
     override fun onCardDragStarted(listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder) {
-        currentDragOperation.dragType = BobBoardView.DragType.CARD
+        currentDragOperation.startCardDrag(listViewHolder.adapterPosition, cardViewHolder.adapterPosition)
     }
 
     override fun onCardDragEnded(listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>?, cardViewHolder: BobBoardListAdapter.CardViewHolder?) {
+        Toast.makeText(this, "Card moved from col: ${currentDragOperation.startingListIndex}, " +
+                "row: ${currentDragOperation.startingCardIndex} to col: ${currentDragOperation.listIndex}, " +
+                "row: ${currentDragOperation.cardIndex}", Toast.LENGTH_LONG).show()
         if (currentDragOperation.dragType == BobBoardView.DragType.CARD && currentDragOperation.orphaned) {
             val viewHolder = boardView.listRecyclerView.findViewHolderForAdapterPosition(currentDragOperation.listIndex) as ScrumBoardAdapter.ScrumListViewHolder
             val listAdapter = viewHolder.listAdapter
@@ -78,16 +81,18 @@ class ReuseSampleActivity : AppCompatActivity(), BobBoardView.BobBoardViewListen
             }
 
             project.columns[currentDragOperation.listIndex].userStories.add(currentDragOperation.cardIndex, currentDragOperation.cardItem!!)
-
-            currentDragOperation.reset()
         } else {
-            val cardViewHolder = cardViewHolder as ScrumColumnAdapterBobBoard.ScrumUserStoryViewHolder
+            val cardViewHolder = cardViewHolder as ScrumColumnAdapter.ScrumUserStoryViewHolder
             cardViewHolder.overlay.visibility = View.GONE
         }
+        currentDragOperation.reset()
     }
 
     override fun onListDragEnded(listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>?) {
         listViewHolder?.itemView?.visibility = View.VISIBLE
+        Toast.makeText(this, "List moved from col: ${currentDragOperation.startingListIndex} " +
+                "to col: ${currentDragOperation.listIndex}", Toast.LENGTH_LONG).show()
+        currentDragOperation.reset()
     }
 
     override fun onCardDragExitedList(listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder) {
@@ -104,6 +109,7 @@ class ReuseSampleActivity : AppCompatActivity(), BobBoardView.BobBoardViewListen
     override fun onListMove(fromPosition: Int, toPosition: Int) {
         boardAdapter.swapItem(fromPosition, toPosition)
         Collections.swap(project.columns, fromPosition, toPosition)
+        currentDragOperation.listIndex = toPosition
     }
 
     override fun onCardMove(listViewHolder: BobBoardAdapter.ListViewHolder<out BobBoardListAdapter<*>>,
@@ -111,6 +117,7 @@ class ReuseSampleActivity : AppCompatActivity(), BobBoardView.BobBoardViewListen
         var viewHolder = listViewHolder as ScrumBoardAdapter.ScrumListViewHolder
         viewHolder.columnAdapter.swapItems(fromPosition, toPosition)
         Collections.swap(project.columns[listIndex].userStories, fromPosition, toPosition)
+        currentDragOperation.cardIndex = toPosition
     }
 
     override fun onCardMoveList(toViewHolder: BobBoardAdapter.ListViewHolder<out BobBoardListAdapter<*>>,
@@ -129,6 +136,26 @@ class ReuseSampleActivity : AppCompatActivity(), BobBoardView.BobBoardViewListen
         currentDragOperation.cardIndex = toIndex
     }
 
-    override fun onCardDragEnteredList(listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder) {
+
+    override fun onCardDragEnteredList(previousListViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>?, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, toIndex: Int) {
+    }
+
+    override fun onListDragEnteredBoardView(listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>?, overIndex: Int): Boolean {
+        Log.d("TEST", "list entered board view over $overIndex")
+        return true
+    }
+
+    override fun onListDragExitedBoardView(listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>): Boolean {
+        Log.d("TEST", "list exited board view")
+        return false
+    }
+
+    override fun canCardDropInList(listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return true
+    }
+
+    override fun canListDropOver(listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, otherListViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>): Boolean {
+        return true
     }
 }

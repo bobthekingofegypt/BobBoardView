@@ -8,6 +8,8 @@
     app:cardBackgroundColor="#fff"
     app:cardUseCompatPadding="true"
     app:cardElevation="2dp"
+    android:layout_marginLeft="5dp"
+    android:layout_marginRight="5dp"
     app:cardCornerRadius="2dp">
     <TextView
         android:padding="10dp"

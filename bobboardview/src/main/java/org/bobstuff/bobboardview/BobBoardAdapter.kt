@@ -26,11 +26,11 @@ abstract class BobBoardAdapter<T : BobBoardAdapter.ListViewHolder<*>> : Recycler
         /**
          * @return the recycler that contains the rows of this board list
          */
-        abstract val recyclerView: RecyclerView
+        abstract val recyclerView: RecyclerView?
         /**
          * @return the listadapter for the rows of this board list
          */
-        abstract val listAdapter: T
+        abstract val listAdapter: T?
     }
 
     open fun onAttachedToBoardView(bobBoardView: BobBoardView) {

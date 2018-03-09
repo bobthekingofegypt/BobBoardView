@@ -11,7 +11,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import org.bobstuff.bobboardview.BobBoardListAdapter
-import org.bobstuff.bobboardview.R
+import org.bobstuff.bobboardview.app.R
 import android.util.TypedValue
 import android.view.MotionEvent
 import org.bobstuff.bobboardview.LongTouchHandler
@@ -25,10 +25,16 @@ import org.bobstuff.bobboardview.app.util.SimpleShadowBuilder
  * Created by bob on 21/02/18.
  */
 
-class ScrumColumnAdapterBobBoard(val context: Context, cardEventCallbacks: CardEventCallbacks):
-        BobBoardListAdapter<ScrumColumnAdapterBobBoard.ScrumUserStoryViewHolder>(cardEventCallbacks, true) {
+class ScrumColumnAdapter(val context: Context, cardEventCallbacks: CardEventCallbacks):
+        BobBoardListAdapter<ScrumColumnAdapter.ScrumUserStoryViewHolder>(cardEventCallbacks, true) {
 
-    val userStories: MutableList<UserStory> = mutableListOf()
+    private val userStories: MutableList<UserStory> = mutableListOf()
+    private var dragCardIndex: Int = -1
+
+    fun setDragCardIndex(cardIndex: Int) {
+        Log.d("TEST", "setDragCArdIndex")
+        this.dragCardIndex = cardIndex
+    }
 
     fun setItems(items: List<UserStory>) {
         userStories.clear()
@@ -63,7 +69,7 @@ class ScrumColumnAdapterBobBoard(val context: Context, cardEventCallbacks: CardE
 
     override fun onBindViewHolder(holder: ScrumUserStoryViewHolder, position: Int) {
         val userStory = userStories[position]
-        holder.overlay.visibility = View.GONE
+        holder.overlay.visibility = View.INVISIBLE
         holder.description.text = userStory.description
         when(userStory.priority) {
             Priority.HIGH -> holder.priorityBar.setBackgroundColor(Color.parseColor("#8d5a2f"))
@@ -99,6 +105,7 @@ class ScrumColumnAdapterBobBoard(val context: Context, cardEventCallbacks: CardE
                 holder.overlay.visibility = View.VISIBLE
             }
         }))
+
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScrumUserStoryViewHolder {
@@ -107,6 +114,12 @@ class ScrumColumnAdapterBobBoard(val context: Context, cardEventCallbacks: CardE
     }
 
     override fun onViewAttachedToWindow(viewHolder: ScrumUserStoryViewHolder) {
+        Log.d("TEST", "TTTTTTTTTTTTT")
+        if (viewHolder.adapterPosition == dragCardIndex) {
+            viewHolder.overlay.visibility = View.VISIBLE
+            cardEventCallbacks.cardMovedDuringDrag(viewHolder, true)
+            dragCardIndex = -1
+        }
         if (isCardAddedDuringDrag) {
             viewHolder.overlay.visibility = View.VISIBLE
         }

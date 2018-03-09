@@ -187,6 +187,8 @@ class BobBoardItemTouchHelper(private val maxScrollSpeed: Int,
         val fromPosition = viewHolder.adapterPosition
         if (callback.onMove(recyclerView, viewHolder, target)) {
             val layoutManager = recyclerView.layoutManager
+            val targetPos = target.adapterPosition
+            recyclerView.scrollToPosition(targetPos)
             if (layoutManager is ItemTouchHelper.ViewDropHandler) {
                 (layoutManager as ItemTouchHelper.ViewDropHandler).prepareForDrop(viewHolder.itemView,
                         target.itemView, x, y)
@@ -228,7 +230,8 @@ class BobBoardItemTouchHelper(private val maxScrollSpeed: Int,
                 continue
             }
             val otherVh = recyclerView.getChildViewHolder(other)
-            if (canDropOver()) {
+            val vlp = otherVh.itemView.layoutParams as RecyclerView.LayoutParams
+            if (!vlp.isItemRemoved && callback.canDropOver(recyclerView, selected!!, otherVh)) {
                 // find the index to add
                 val dx = Math.abs(centerX - (other.left + other.right) / 2)
                 val dy = Math.abs(centerY - (other.top + other.bottom) / 2)
@@ -399,6 +402,9 @@ class BobBoardItemTouchHelper(private val maxScrollSpeed: Int,
     abstract class Callback {
         abstract fun onMove(recyclerView: RecyclerView,
                             viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean
+
+        abstract fun canDropOver(recyclerView: RecyclerView, current: RecyclerView.ViewHolder,
+                        target: RecyclerView.ViewHolder): Boolean
     }
 
     companion object {

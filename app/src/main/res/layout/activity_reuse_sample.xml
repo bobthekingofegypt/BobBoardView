@@ -9,6 +9,7 @@
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/my_toolbar"
+        android:contentDescription="toolbar"
         android:layout_width="0dp"
         android:layout_height="?attr/actionBarSize"
         android:background="@color/scrum_background"
@@ -22,6 +23,7 @@
 
     <org.bobstuff.bobboardview.BobBoardView
         android:id="@+id/board_view"
+        android:contentDescription="board_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="@color/scrum_background"

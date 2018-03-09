@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:orientation="vertical"
+    android:layout_width="@dimen/trello_item_list_width"
+    android:layout_height="wrap_content"
+    android:animateLayoutChanges="false"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <android.support.v7.widget.CardView
+        android:id="@+id/cardview"
+        android:layout_width="@dimen/trello_item_list_width"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="#d5d9db"
+        app:cardUseCompatPadding="true"
+        app:cardElevation="2dp"
+        app:cardCornerRadius="2dp">
+        <Button
+            android:text="Add List"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </android.support.v7.widget.CardView>
+</LinearLayout>

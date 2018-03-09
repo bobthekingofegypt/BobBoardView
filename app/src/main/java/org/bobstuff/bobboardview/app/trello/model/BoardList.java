@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by bob on 16/01/18.
+ * Created by bob
  */
 
 public class BoardList {

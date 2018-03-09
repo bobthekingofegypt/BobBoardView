@@ -1,7 +1,7 @@
 package org.bobstuff.bobboardview.app.trello.model;
 
 /**
- * Created by bob on 16/01/18.
+ * Created by bob
  */
 
 public class Card {

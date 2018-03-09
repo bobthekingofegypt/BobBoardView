@@ -17,7 +17,7 @@ class SimpleShadowBuilder(
 ) : View.DragShadowBuilder(view) {
     private val radians = degrees * (PI /180)
     private val widthScaled: Int = (view.width * scale).toInt()
-    private val heightScaled: Int = (view.height * scale).toInt()
+    private val heightScaled: Int = Math.min((view.height * scale).toInt(), 2000)
     private val widthAdjusted: Int = ((widthScaled*Math.cos(radians)) - (heightScaled*Math.sin(radians))).toInt()
     private val heightAdjusted: Int = (Math.abs(widthScaled*Math.sin(radians)) + (heightScaled*Math.cos(radians))).toInt()
     private val offsetX: Float = Math.abs(widthAdjusted - widthScaled).toFloat()

@@ -42,7 +42,7 @@ import android.view.View
 abstract class BobBoardListAdapter<T : BobBoardListAdapter.CardViewHolder>
 @JvmOverloads constructor(
         protected var cardEventCallbacks: CardEventCallbacks,
-        @field:Transient private val debugLoggingEnabled: Boolean = false
+        @field:Transient private val debugLoggingEnabled: Boolean = true
 ) : RecyclerView.Adapter<T>() {
     /**
      * flag to indicate that the next view added to the window was triggered because of a user drag.
@@ -82,6 +82,7 @@ abstract class BobBoardListAdapter<T : BobBoardListAdapter.CardViewHolder>
      */
     interface CardEventCallbacks {
         fun cardSelectedForDrag(viewHolder: BobBoardListAdapter.CardViewHolder, x: Float, y: Float)
+        fun cardMovedDuringDrag(viewHolder: BobBoardListAdapter.CardViewHolder, d: Boolean)
         fun cardMovedDuringDrag(viewHolder: BobBoardListAdapter.CardViewHolder)
     }
 
@@ -91,8 +92,12 @@ abstract class BobBoardListAdapter<T : BobBoardListAdapter.CardViewHolder>
             bobBoardAdapter.boardView!!.startCardDrag(listViewHolder, viewHolder, x, y)
         }
 
+        override fun cardMovedDuringDrag(viewHolder: BobBoardListAdapter.CardViewHolder, d: Boolean) {
+            bobBoardAdapter.boardView!!.switchCardDrag(listViewHolder, viewHolder, d)
+        }
+
         override fun cardMovedDuringDrag(viewHolder: BobBoardListAdapter.CardViewHolder) {
-            bobBoardAdapter.boardView!!.switchCardDrag(listViewHolder.recyclerView, viewHolder)
+            bobBoardAdapter.boardView!!.switchCardDrag(listViewHolder, viewHolder, true)
         }
 
     }
