@@ -3,6 +3,7 @@ package org.bobstuff.bobboardview.app.scrum
 import android.content.ClipData
 import android.content.Context
 import android.graphics.Color
+import android.os.Build
 import android.support.v4.content.ContextCompat
 import android.util.Log
 import android.view.LayoutInflater
@@ -10,14 +11,15 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import org.bobstuff.bobboardview.BobBoardListAdapter
 import org.bobstuff.bobboardview.app.R
 import android.util.TypedValue
 import android.view.MotionEvent
-import org.bobstuff.bobboardview.LongTouchHandler
 import java.util.*
 import android.widget.Toast
-import org.bobstuff.bobboardview.OnLongTouchHandlerCallback
+import org.bobstuff.bobboardview.*
+import org.bobstuff.bobboardview.app.simple.BoardList
+import org.bobstuff.bobboardview.app.simple.Card
+import org.bobstuff.bobboardview.app.simple.SimpleListAdapter
 import org.bobstuff.bobboardview.app.util.SimpleShadowBuilder
 
 
@@ -25,50 +27,27 @@ import org.bobstuff.bobboardview.app.util.SimpleShadowBuilder
  * Created by bob on 21/02/18.
  */
 
-class ScrumColumnAdapter(val context: Context, cardEventCallbacks: CardEventCallbacks):
-        BobBoardListAdapter<ScrumColumnAdapter.ScrumUserStoryViewHolder>(cardEventCallbacks, true) {
+class ScrumColumnAdapter(val context: Context, dragOperation: BobBoardDragOperation<UserStory, Column>,
+                         cardEventCallbacks: CardEventCallbacks):
+        BobBoardListArrayAdapter<ScrumColumnAdapter.ScrumUserStoryViewHolder, UserStory, Column>(cardEventCallbacks, dragOperation) {
 
-    private val userStories: MutableList<UserStory> = mutableListOf()
-    private var dragCardIndex: Int = -1
+    var columnContainingDragTargetRedisplaying = false
 
-    fun setDragCardIndex(cardIndex: Int) {
-        Log.d("TEST", "setDragCArdIndex")
-        this.dragCardIndex = cardIndex
+    override fun getItemId(position: Int): Long {
+        return cards[position].id.hashCode().toLong()
     }
 
-    fun setItems(items: List<UserStory>) {
-        userStories.clear()
-        userStories.addAll(items)
-        notifyDataSetChanged()
-    }
+    override fun swapItems(fromPosition: Int, toPosition: Int) {
+        val s = cards.map(UserStory::id).joinToString()
+        Log.d("TEST", "cards: $s")
+        super.swapItems(fromPosition, toPosition)
 
-    fun swapItems(fromPosition: Int, toPosition: Int) {
-        Collections.swap(userStories, toPosition, fromPosition)
-        notifyItemMoved(toPosition, fromPosition)
-    }
-
-    fun removeItem(index: Int): UserStory {
-        val userStory = userStories.removeAt(index)
-        notifyItemRemoved(index)
-        return userStory
-    }
-
-    fun insertItem(index: Int, userStory: UserStory) {
-        this.insertItem(index, userStory, true)
-    }
-
-    fun insertItem(index: Int, userStory: UserStory, isCardAddedDuringDrag: Boolean) {
-        userStories.add(index, userStory)
-        this.isCardAddedDuringDrag = isCardAddedDuringDrag
-        notifyItemInserted(index)
-    }
-
-    override fun getItemCount(): Int {
-        return userStories.size
+        val t = cards.map(UserStory::id).joinToString()
+        Log.d("TEST", "cards: $t")
     }
 
     override fun onBindViewHolder(holder: ScrumUserStoryViewHolder, position: Int) {
-        val userStory = userStories[position]
+        val userStory = cards[position]
         holder.overlay.visibility = View.INVISIBLE
         holder.description.text = userStory.description
         when(userStory.priority) {
@@ -101,7 +80,12 @@ class ScrumColumnAdapter(val context: Context, cardEventCallbacks: CardEventCall
 
                 val data = ClipData.newPlainText("", "")
                 val shadowBuilder = SimpleShadowBuilder(holder.itemView, 1.0, 1.0f, event.x, event.y)
-                holder.itemView.startDrag(data, shadowBuilder, null, 0)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    holder.itemView.startDragAndDrop(data, shadowBuilder, null, 0)
+                } else {
+                    @Suppress("DEPRECATION")
+                    holder.itemView.startDrag(data, shadowBuilder, null, 0)
+                }
                 holder.overlay.visibility = View.VISIBLE
             }
         }))
@@ -114,13 +98,17 @@ class ScrumColumnAdapter(val context: Context, cardEventCallbacks: CardEventCall
     }
 
     override fun onViewAttachedToWindow(viewHolder: ScrumUserStoryViewHolder) {
-        Log.d("TEST", "TTTTTTTTTTTTT")
-        if (viewHolder.adapterPosition == dragCardIndex) {
+        Log.d("TEST", "dragoperation card index: ${dragOperation.cardIndex}, " +
+                "adapter position ${viewHolder.adapterPosition}")
+
+        //TODO we want to generalise this redisplay logic so that any views that don't remove the
+        //card during drag can have it for free
+        if (columnContainingDragTargetRedisplaying && viewHolder.adapterPosition == dragOperation.cardIndex) {
             viewHolder.overlay.visibility = View.VISIBLE
-            cardEventCallbacks.cardMovedDuringDrag(viewHolder, true)
-            dragCardIndex = -1
+            cardEventCallbacks.cardMovedDuringDrag(viewHolder, false)
+            columnContainingDragTargetRedisplaying = false
         }
-        if (isCardAddedDuringDrag) {
+        if (isCardAddedDuringDrag && addedCardId == viewHolder.itemId) {
             viewHolder.overlay.visibility = View.VISIBLE
         }
         super.onViewAttachedToWindow(viewHolder)

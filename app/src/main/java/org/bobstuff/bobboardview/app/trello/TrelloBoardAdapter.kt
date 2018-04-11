@@ -37,17 +37,14 @@ import java.util.concurrent.CopyOnWriteArraySet
  * Created by bob
  */
 
-class TrelloBoardAdapter(private val context: Context, private val width: Int) :
-        BobBoardAdapter<TrelloBoardAdapter.TrelloListViewHolderBase>() {
-    private val lists: MutableList<BoardList> = mutableListOf()
+class TrelloBoardAdapter(private val context: Context, dragOperation: BobBoardDragOperation<Card, BoardList>,
+                         private val width: Int) :
+        BobBoardArrayAdapter<TrelloBoardAdapter.TrelloListViewHolderBase, Card, BoardList>(dragOperation) {
     private val animatingViewHolders: MutableSet<TrelloListViewHolderBase> = CopyOnWriteArraySet()
     private var listDraggingActivated: Boolean = false
     private var currentlyScaled: Boolean = false
     private var currentlyAnimating: Boolean = false
     private val scaledWidth: Int = (width * SCALE_FACTOR).toInt()
-    private val columnScrollPositions: MutableMap<BoardList, Parcelable> = mutableMapOf()
-    var isListAddedDuringDrag: Boolean = false
-    var itemAddedDuringDrag: Long = -1
     var animator: ValueAnimator? = null
     var orientationHelper: OrientationHelper? = null
     val viewPool = RecyclerView.RecycledViewPool()
@@ -64,43 +61,9 @@ class TrelloBoardAdapter(private val context: Context, private val width: Int) :
 
     override fun getItemId(position: Int): Long {
         if (position <= lists.size - 1) {
-            return lists[position].hashCode().toLong()
+            return lists[position].id
         }
         return 666
-    }
-
-    fun setItems(items: List<BoardList>) {
-        this.lists.clear()
-        this.lists.addAll(items)
-        this.notifyDataSetChanged()
-    }
-
-    fun removeItem(index: Int): BoardList {
-        val viewHolder = boardView!!.listRecyclerView.findViewHolderForAdapterPosition(index)
-        val holder = viewHolder as TrelloListViewHolder
-        columnScrollPositions[lists[index]] = holder.recyclerView.layoutManager.onSaveInstanceState()
-        val boardList = lists.removeAt(index)
-        Log.d("TEST", "remove item b: ${boardList.title}")
-        notifyItemRemoved(index)
-        return boardList
-    }
-
-    fun insertItem(index: Int, boardList: BoardList) {
-        insertItem(index, boardList, true)
-    }
-
-    fun insertItem(index: Int, boardList: BoardList, isListAddedDuringDrag: Boolean) {
-        Log.d("TEST", "Inserting item b: ${boardList.title}")
-        lists.add(index, boardList)
-        this.isListAddedDuringDrag = isListAddedDuringDrag
-        itemAddedDuringDrag = boardList.hashCode().toLong()
-        notifyItemInserted(index)
-    }
-
-    fun swapItem(fromPosition: Int, toPosition: Int): Boolean {
-        Collections.swap(lists, fromPosition, toPosition)
-        notifyItemMoved(fromPosition, toPosition)
-        return true
     }
 
     override fun getItemCount(): Int {
@@ -114,71 +77,32 @@ class TrelloBoardAdapter(private val context: Context, private val width: Int) :
         return 1
     }
 
-    override fun onViewRecycled(holder: TrelloListViewHolderBase) {
-        val index = holder.adapterPosition
-        if (index != -1) {
-            holder.recyclerView?.let {
-                columnScrollPositions[lists[index]] = it.layoutManager.onSaveInstanceState()
-            }
-        }
-
-        super.onViewRecycled(holder)
-    }
-
     override fun onBindViewHolder(holder: TrelloListViewHolderBase, position: Int) {
         when(holder.itemViewType) {
             0 -> {
                 val holder = holder as TrelloListViewHolder
                 val boardList = lists[position]
-                val title = boardList.title
-                holder.title.text = title
-                holder.recyclerView.contentDescription = "$title cards"
+                holder.title.text = boardList.title
+                holder.recyclerView.contentDescription = "${boardList.title} cards"
                 holder.id = boardList.title
 
-                holder.itemView.findViewById<View>(R.id.simple_text2).setOnClickListener {
-                    val a = holder.listAdapter as TrelloListAdapter
-                    (holder.listAdapter as TrelloListAdapter).onItemMove(a.itemCount - 2, a.itemCount -1)
-                }
-
-                holder.title.setOnTouchListener(object : View.OnTouchListener {
-                    override fun onTouch(v: View, event: MotionEvent): Boolean {
-                        val action = event.action
-                        when (action and MotionEvent.ACTION_MASK) {
-                            MotionEvent.ACTION_DOWN -> {
-
-                                val data = ClipData.newPlainText("", "")
-                                val shadowBuilder = SimpleShadowBuilder(holder.itemView, 3.0, 0.7f, event.x, event.y)
-                                val r = holder.itemView.startDrag(data, shadowBuilder, null, DRAG_FLAG_OPAQUE)
-                                //Log.d("TEST", "drag return value : " + r)
-
-                                //if (r) {
-                                boardView?.startListDrag(holder as ListViewHolder<*>, event.x * SCALE_FACTOR, event.y)
-                                holder.itemView.visibility = View.INVISIBLE
-                                //}
-                            }
-                            MotionEvent.ACTION_CANCEL -> {
-                                //boardView?.stopDragEventIfStillRunning()
-                                //Log.d("TEST", "CANCEL")
-                            }
-
-                            MotionEvent.ACTION_UP -> {
-                                // boardView?.stopDragEventIfStillRunning()
-                                Log.d("TEST", "UP")
-                            }
+                (holder.title as View).setOnTouchListener { v, event ->
+                    val action = event.action
+                    when (action and MotionEvent.ACTION_MASK) {
+                        MotionEvent.ACTION_DOWN -> {
+                            val shadowBuilder = SimpleShadowBuilder(holder.itemView, 3.0, 0.7f, event.x, event.y)
+                            startDrag(holder, shadowBuilder, event.x, event.y)
+                            holder.itemView.visibility = View.INVISIBLE
                         }
-                        return true
                     }
-                })
-
-                holder.listAdapter.setItems(boardList.cards)
-
-                if (columnScrollPositions.containsKey(boardList)) {
-                    holder.recyclerView.layoutManager.onRestoreInstanceState(columnScrollPositions[boardList])
+                    true
                 }
+
+                holder.itemView.visibility = View.VISIBLE
+                holder.listAdapter.setItems(boardList.cards)
             }
             1 -> {
                 val holder = holder as TrelloNewListViewHolder
-                //TODO add onclick listener
             }
         }
 
@@ -196,24 +120,6 @@ class TrelloBoardAdapter(private val context: Context, private val width: Int) :
         holder.itemView.layoutParams = lp
         child.scaleY = ratio
         child.scaleX = ratio
-
-        /*
-        holder.itemView.setOnTouchListener(LongTouchHandler(context, object : OnLongTouchHandlerCallback {
-            override fun onLongPress(event: MotionEvent) {
-                boardView?.startListDrag(holder as ListViewHolder<*>, event.x * SCALE_FACTOR, event.y)
-
-                val data = ClipData.newPlainText("", "")
-                val shadowBuilder = SimpleShadowBuilder(holder.itemView, 3.0, 0.7f, event.x, event.y)
-                holder.itemView.startDrag(data, shadowBuilder, null, 0)
-                holder.itemView.visibility = View.INVISIBLE
-            }
-
-            override fun onClick(e: MotionEvent) {
-
-            }
-        }))
-        */
-
     }
 
     override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int): TrelloListViewHolderBase {
@@ -242,6 +148,7 @@ class TrelloBoardAdapter(private val context: Context, private val width: Int) :
 
         listDraggingActivated = true
         currentlyAnimating = true
+
         val childCount = recyclerView.childCount
         var i = 0
         while (i < childCount) {
@@ -253,7 +160,6 @@ class TrelloBoardAdapter(private val context: Context, private val width: Int) :
         val lm = recyclerView.layoutManager
         val rect = Rect()
         lm.calculateItemDecorationsForChild(viewHolder.itemView, rect)
-        val fullWidth = width + rect.left + rect.right
         val offset = (width * 1.5) - (width * 1.5 * 0.7)
 
         animator = ValueAnimator.ofInt(width, scaledWidth)
@@ -283,43 +189,19 @@ class TrelloBoardAdapter(private val context: Context, private val width: Int) :
             val removed = lp.isItemRemoved
             if (!removed) {
                 val viewHolder = recyclerView.getChildViewHolder(recyclerView.getChildAt(i)) as TrelloListViewHolderBase
-                //Log.d("TEST", "triggerScaleUpAnimation viewholder ${viewHolder.title.text}")
-               // Log.d("TEST", "triggerScaleUpAnimation poistion ${viewHolder.adapterPosition}")
-               // Log.d("TEST", "triggerScaleUpAnimation removed ${removed}")
                 animatingViewHolders.add(viewHolder)
             }
             ++i
         }
 
-        val playTime = animator?.currentPlayTime
         var startValue = scaledWidth
         if (animator?.isRunning!!) {
             startValue = animator?.animatedValue as Int
             animator?.cancel()
         }
-        val lm = recyclerView.layoutManager
-
-        val orientationHelper = orientationHelper!!
-
-        val childCenter = orientationHelper.getDecoratedStart(viewHolder.itemView) +
-                orientationHelper.getDecoratedMeasurement(viewHolder.itemView) / 2
-        val containerCenter: Int
-        if (lm.clipToPadding) {
-            containerCenter = orientationHelper.getStartAfterPadding() + orientationHelper.getTotalSpace() / 2
-        } else {
-            containerCenter = orientationHelper.getEnd() / 2
-        }
-        val distanceToCenter = childCenter - containerCenter
-        Log.d("TEST", "distance to center: $distanceToCenter")
-        Log.d("TEST", "left edge: ${viewHolder.itemView.left}")
-        val rect = Rect()
-        lm.calculateItemDecorationsForChild(viewHolder.itemView, rect)
-        val fullWidth = width + rect.left + rect.right
-        val offset = (((width * 1) - (startValue * 1))) / 2
 
         val animator = ValueAnimator.ofInt(startValue, width)
         animator.addUpdateListener(LayoutWidthUpdateListener())
-        //animator.addUpdateListener(ScrollInTimeUpdateListener(recyclerView.scrollX, offset.toInt(), true))
         animator.addUpdateListener(ScrollInTimeUpdateListener2(viewHolder.itemView))
         animator.addListener(ViewHolderAnimatorListener())
         animator.addListener(object : AnimatorListenerAdapter() {
@@ -333,46 +215,41 @@ class TrelloBoardAdapter(private val context: Context, private val width: Int) :
         animator.start()
     }
 
-    override fun onViewDetachedFromWindow(holder: TrelloListViewHolderBase) {
-        Log.d("TEST", "View detatched from window")
-        super.onViewDetachedFromWindow(holder)
-    }
-
     override fun onViewAttachedToWindow(viewHolder: TrelloListViewHolderBase) {
-        Log.d("TEST", "onViewAttachedToWindow hash:${viewHolder.itemId}; added:${itemAddedDuringDrag} isListAddedDuringDrag:$isListAddedDuringDrag")
-        if (isListAddedDuringDrag && viewHolder.itemId == itemAddedDuringDrag) {
-            isListAddedDuringDrag = false
-            itemAddedDuringDrag = -1
-            boardView?.switchListDrag(viewHolder!!)
-            boardView?.disableDragEvents = false
+        if (isListAddedDuringDrag && addedListId == viewHolder.itemId) {
             viewHolder?.itemView?.visibility = View.INVISIBLE
         }
-        if (currentlyAnimating) {
-            viewHolder!!.setIsRecyclable(false)
-            animatingViewHolders.add(viewHolder)
-        } else if (currentlyScaled) {
-            val child = viewHolder.cardView
-            val currentWidth = scaledWidth
-            val ratio = scaledWidth / width.toFloat()
+        when {
+            currentlyAnimating -> {
+                viewHolder!!.setIsRecyclable(false)
+                animatingViewHolders.add(viewHolder)
+            }
+            currentlyScaled -> {
+                val child = viewHolder.cardView
+                val currentWidth = scaledWidth
+                val ratio = scaledWidth / width.toFloat()
 
-            val lp = viewHolder.itemView.layoutParams
-            lp.width = currentWidth
-            viewHolder.itemView.layoutParams = lp
-            child.scaleY = ratio
-            child.scaleX = ratio
-        } else {
-            val child = viewHolder.cardView
-            val ratio = 1.0f
-            val currentWidth = width
+                val lp = viewHolder.itemView.layoutParams
+                lp.width = currentWidth
+                viewHolder.itemView.layoutParams = lp
+                child.scaleY = ratio
+                child.scaleX = ratio
+            }
+            else -> {
+                val child = viewHolder.cardView
+                val ratio = 1.0f
+                val currentWidth = width
 
-            val lp = viewHolder.itemView.layoutParams
-            lp.width = currentWidth
-            viewHolder.itemView.layoutParams = lp
-            child.scaleY = ratio
-            child.scaleX = ratio
+                val lp = viewHolder.itemView.layoutParams
+                lp.width = currentWidth
+                viewHolder.itemView.layoutParams = lp
+                child.scaleY = ratio
+                child.scaleX = ratio
+            }
         }
-    }
 
+        super.onViewAttachedToWindow(viewHolder)
+    }
 
     private inner class LayoutWidthUpdateListener : ValueAnimator.AnimatorUpdateListener {
         override fun onAnimationUpdate(animation: ValueAnimator) {
@@ -400,7 +277,7 @@ class TrelloBoardAdapter(private val context: Context, private val width: Int) :
 
             scrollBy = scrollBy * (if (reverse) { 1 } else -1)
 
-            Log.d("TEST", "Step: $step; progress: $progress; scrollBy: $scrollBy; total: $total; offset: $offset")
+            //Log.d("TEST", "Step: $step; progress: $progress; scrollBy: $scrollBy; total: $total; offset: $offset")
 
             boardView?.listRecyclerView?.scrollBy(scrollBy, 0)
         }
@@ -420,7 +297,7 @@ class TrelloBoardAdapter(private val context: Context, private val width: Int) :
                 containerCenter = orientationHelper.getEnd() / 2
             }
             val distanceToCenter = childCenter - containerCenter
-            Log.d("TEST", "distancetocenter: $distanceToCenter")
+            //Log.d("TEST", "distancetocenter: $distanceToCenter")
 
             boardView?.listRecyclerView?.scrollBy(distanceToCenter, 0)
         }
@@ -448,10 +325,6 @@ class TrelloBoardAdapter(private val context: Context, private val width: Int) :
         }
     }
 
-    companion object {
-        private const val SCALE_FACTOR = 0.7f
-    }
-
     abstract inner class TrelloListViewHolderBase(view: View): BobBoardAdapter.ListViewHolder<TrelloListAdapter>(view) {
         val cardView: View = view.findViewById(R.id.cardview)
 
@@ -466,21 +339,22 @@ class TrelloBoardAdapter(private val context: Context, private val width: Int) :
         val title: TextView = view.findViewById(R.id.title)
         override val recyclerView: RecyclerView = view.findViewById(R.id.card_recycler)
         override var listAdapter: TrelloListAdapter =
-                TrelloListAdapter(context, DefaultCardEventCallbacks(
+                TrelloListAdapter(context, dragOperation, DefaultCardEventCallbacks(
                         this@TrelloBoardAdapter, this))
 
         init {
             recyclerView.layoutManager = LinearLayoutManager(recyclerView.context, LinearLayoutManager.VERTICAL, false)
             recyclerView.adapter = listAdapter
             recyclerView.recycledViewPool = viewPool
-
-            //val dividerSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4f, context.resources.displayMetrics)
-            //recyclerView.addItemDecoration(BobBoardSimpleDividers(dividerSizeInPixels.toInt(), BobBoardSimpleDividersOrientation.VERTICAL))
         }
     }
 
     inner class TrelloNewListViewHolder(view: View) : TrelloListViewHolderBase(view) {
         override val recyclerView: RecyclerView? = null
         override var listAdapter: TrelloListAdapter? = null
+    }
+
+    companion object {
+        private const val SCALE_FACTOR = 0.7f
     }
 }

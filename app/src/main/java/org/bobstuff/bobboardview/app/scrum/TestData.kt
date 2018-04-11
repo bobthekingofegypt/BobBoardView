@@ -12,7 +12,7 @@ data class UserStory(val description: String, val id: String, val assignee: Stri
 
 data class Column(val description: String, val userStories: MutableList<UserStory>)
 
-data class Project(val name: String, val columns: List<Column>)
+data class Project(val name: String, val columns: MutableList<Column>)
 
 public fun generateTestData(): Project {
     val story1 = UserStory(description = "Investigate how to make a scrum board",
@@ -37,7 +37,7 @@ public fun generateTestData(): Project {
             image = null)
 
     val story4 = UserStory(description = "Story with a bunch of text and an image of awesomeness just for something different",
-            id = "BOB-2",
+            id = "BOB-3",
             assignee = "link to image",
             points = 1,
             priority = Priority.HIGH,
@@ -85,5 +85,5 @@ public fun generateTestData(): Project {
     val column5 = Column("COMPLETE", mutableListOf())
     val column6 = Column("DONE", mutableListOf())
 
-    return Project("Create a scrum board", listOf(column1, column2, column3, column4, column5, column6))
+    return Project("Create a scrum board", mutableListOf(column1, column2, column3, column4, column5, column6))
 }

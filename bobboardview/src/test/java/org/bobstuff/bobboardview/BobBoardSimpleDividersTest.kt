@@ -11,6 +11,7 @@ import org.junit.runner.RunWith
 import org.mockito.Mockito
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import java.util.*
 
 /**
  * Created by bob
@@ -24,6 +25,17 @@ class BobBoardSimpleDividersTest {
         val activityController = Robolectric.buildActivity(Activity::class.java)
         val activity = activityController.get()
         view = View(activity)
+    }
+
+    @Test
+    fun letListOrdering() {
+        var l = listOf("a", "b", "c", "d", "e", "f")
+
+        Collections.rotate(l.subList(1, 4), 3)
+
+        val t = l.joinToString()
+        print(t)
+
     }
 
     @Test

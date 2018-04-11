@@ -17,6 +17,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.TimeUnit
 import android.support.test.espresso.Espresso.onView
+import android.support.test.espresso.action.Swipe
 import android.support.test.espresso.contrib.RecyclerViewActions
 import android.support.test.espresso.matcher.ViewMatchers
 import android.support.test.uiautomator.Direction
@@ -420,6 +421,44 @@ class BoardActivityInstrumentedTest {
     }
 
     @Test
+    fun ensureDropOnEmptyColumnDoesntCrash() {
+        Espresso.onView(ViewMatchers.withContentDescription("column recycler"))
+                .perform(RecyclerViewActions.scrollToPosition<RecyclerView.ViewHolder>(1))
+
+
+        var item = device.findObject(By
+                .text("Check synchronous image load of separate thread isn't bad"))
+
+        var p = item.visibleCenter
+
+
+        val intoViewPoints = mutableListOf<Point>(Point(item.visibleBounds.right - 1, p.y), Point(p.x - 1, p.y))
+        device.swipe(intoViewPoints.toTypedArray(), 20)
+
+        TimeUnit.MILLISECONDS.sleep(600)
+
+        item = device.findObject(By
+                .text("Check synchronous image load of separate thread isn't bad"))
+
+        p = item.visibleCenter
+
+        val blockedList = blockedListRecycler()
+
+        val points = mutableListOf<Point>()
+        points.addAll(MutableList(15) {_ -> item.visibleCenter})
+        val sp = arrayOf(
+                Point(blockedList.visibleCenter.x + 50, p.y),
+                Point(blockedList.visibleCenter.x + 50, p.y))
+        for (i in 1..10) points.addAll(sp)
+        device.swipe(points.toTypedArray(), 35)
+
+        TimeUnit.MILLISECONDS.sleep(600)
+
+        Screenshot.snapActivity(activityRule.activity)
+                .record()
+    }
+
+    @Test
     fun ensureLeaveDeadColumnReturnsToPreviousLocationNotCrash() {
         Espresso.onView(ViewMatchers.withContentDescription("column recycler"))
                 .perform(RecyclerViewActions.scrollToPosition<RecyclerView.ViewHolder>(5))
@@ -593,6 +632,11 @@ class BoardActivityInstrumentedTest {
     private fun todoListRecycler(): UiObject2 {
         return device.findObject(By
                 .desc("todo cards"))
+    }
+
+    private fun blockedListRecycler(): UiObject2 {
+        return device.findObject(By
+                .desc("blocked cards"))
     }
 
     private fun inProgressList(): UiObject2 {

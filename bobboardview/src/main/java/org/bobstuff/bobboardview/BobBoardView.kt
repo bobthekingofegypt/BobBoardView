@@ -4,29 +4,94 @@ import android.content.Context
 import android.graphics.PointF
 import android.graphics.Rect
 import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.OrientationHelper
 import android.support.v7.widget.RecyclerView
 import android.util.AttributeSet
 import android.util.Log
 import android.view.DragEvent
+import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import org.bobstuff.bobboardview.BobBoardAdapter.ListViewHolder
 
 /**
+ * BobBoardView is a custom view that attempts to make it easier to make "Board" style applications
+ * that can drag their elements around.
+ *
+ * ----------------------------------
+ * | column A | column B | column C |
+ * | ------------------------------ |
+ * | row 1a    | row 1b    | row 1c |
+ * | row 2a    | row 2b    | row 2c |
+ * | row 3a    | row 3b    | row 3c |
+ * | row 4a    | row 4b    | row 4c |
+ * |--------------------------------|
+ *
+ * Terminology is a bit confused, but
+ *
+ * List -  column and list are currently used alternatively with each other
+ * to refer to the same thing. They refer to the columns in the above ascii diagram.
+ *
+ * Card - term used to represent a row, sadly card/story/row are used to refer to the same thing
+ *
+ * Currently the functionality here is deliberately limited, its only real job is to attempt to
+ * orchestrate the touch helper onto the active lists and tell the listener about what is happening
+ * with the drag point.  Tracking current drag operations and their meaning on the data is the
+ * responsibility of the listener and or adapters.  This may change in the future but for now I have
+ * gone for the most flexible solution I could and this design allows the listener and adapters to
+ * build complex logic that wouldn't be possible if the functionality was limited to what the
+ * boardview could do itself.
+ *
  * Created by bob
  */
 
 class BobBoardView : FrameLayout {
+    /**
+     * Horizontal Recycler view that is responsible for the lists on the board.  It is created and
+     * managed by the boardview.  Public access is given for now to allow you to create item
+     * decorations or interogate the recyclerview where you only have access to the boardview
+     */
     lateinit var listRecyclerView: RecyclerView
         private set
+    /**
+     * Orientation helper to handle some size and position boilerplate answers
+     */
+    lateinit var listOrientationHelper: OrientationHelper
+    /**
+     * Custom scroller used to scroll the main list recyclerview when dragging cards around near the
+     * edges
+     */
     private lateinit var mBobBoardScroller: BobBoardScroller
+    /**
+     * Touch helper is a heavily modified version of the recyclerview ItemTouchHelper, boardview is
+     * responsible for making sure it is attached to the correct recyclerview at all times, or no
+     * recycler when it makes sense
+     */
     private lateinit var mItemTouchHelper: BobBoardItemTouchHelper
-    private var mBoardViewListener: BobBoardViewListener? = null
-    private var mBoardAdapater: BobBoardAdapter<out ListViewHolder<*>>? = null
+    /**
+     * BobBoardViewListener is the way to register for events around the boardview, it is how you
+     * build any of the drag/drop style features in your app
+     */
+    private lateinit var boardViewListener: BobBoardViewListener
+    /**
+     * BobBoardAdapter is an abstract class that you need to extend to create your own adapter.  It
+     * extends from RecyclerView.Adapter so you can use all normal adapter style code in it but you
+     * have to add a couple of extra parts
+     */
+    var boardAdapter: BobBoardAdapter<out ListViewHolder<*>>? = null
+        set(value) {
+            if (field !== value) {
+                field?.onDetachedFromBoardView(this)
+            }
+            field = value
+            listRecyclerView.adapter = field
+            field?.onAttachedToBoardView(this)
+        }
+
     private val tempRect = Rect()
     private var debugEnabled: Boolean = true
-    private var listExitCallbackCalled: Boolean = false
+    private var cardExitedListCallbackCalled: Boolean = false
     private var isDragging = false
     var currentDragType = DragType.NONE
         private set
@@ -47,16 +112,10 @@ class BobBoardView : FrameLayout {
      */
     private var currentListViewHolder: ListViewHolder<BobBoardListAdapter<*>>? = null
     private var currentListIndex = NO_LIST_ACTIVE
+    private var activeListViewHolder: ListViewHolder<BobBoardListAdapter<*>>? = null
     private var activeListIndex = NO_LIST_ACTIVE
-    private var reenteringBoardView: Boolean = false
+    private var listViewReenteringBoardView: Boolean = false
     private var initialEntryEventProcessed: Boolean = false
-    var disableDragEvents: Boolean = false
-        set(value) {
-            if (value) {
-                mItemTouchHelper.attachToRecyclerView(null)
-            }
-            field = value
-        }
 
     constructor(context: Context) : super(context) {
         init()
@@ -66,39 +125,29 @@ class BobBoardView : FrameLayout {
         init()
     }
 
+    /**
+     * @param boardViewListener listener for boardview events
+     */
     fun setBoardViewListener(boardViewListener: BobBoardViewListener) {
-        this.mBoardViewListener = boardViewListener
-    }
-
-    fun setBoardAdapter(boardAdapter: BobBoardAdapter<out ListViewHolder<*>>) {
-        if (this.mBoardAdapater !== boardAdapter) {
-            mBoardAdapater?.onDetachedFromBoardView(this)
-        }
-        this.mBoardAdapater = boardAdapter
-        listRecyclerView.adapter = boardAdapter
-        boardAdapter.onAttachedToBoardView(this)
+        this.boardViewListener = boardViewListener
     }
 
     private fun init() {
         listRecyclerView = RecyclerView(context)
-        //listRecyclerView.setHasFixedSize(true)
-        listRecyclerView.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+        //temp fix for https://issuetracker.google.com/issues/74602131
+        listRecyclerView.preserveFocusAfterLayout = false
+        listRecyclerView.layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT)
         val llm = LinearLayoutManager(context,
                 LinearLayoutManager.HORIZONTAL, false)
         listRecyclerView.layoutManager = llm
-
+        listOrientationHelper = OrientationHelper.createHorizontalHelper(llm)
 
         listRecyclerView.setOnDragListener(OnDragListener { _, event ->
             val action = event.action
             val x = event.x
             val y = event.y
-
-            //Log.d("TEST", "(x,y): ($x, $y)")
-
-            if (disableDragEvents) {
-                return@OnDragListener true
-            }
 
             when (action) {
                 DragEvent.ACTION_DRAG_STARTED -> {
@@ -106,40 +155,37 @@ class BobBoardView : FrameLayout {
                     return@OnDragListener true
                 }
                 DragEvent.ACTION_DRAG_ENTERED -> {
-                    Log.d("TEST", "ACTION_DRAG_ENTERED")
                     if (!initialEntryEventProcessed) {
                         initialEntryEventProcessed = true
                         return@OnDragListener true
                     }
                     if (currentDragType == DragType.LIST) {
-                        reenteringBoardView = true
+                        listViewReenteringBoardView = true
                     }
                     return@OnDragListener true
                 }
                 DragEvent.ACTION_DRAG_LOCATION -> {
-                    //Log.d("TEST", "ACTION_DRAG_LOCATION")
                     mLastDragPoint.set(x, y)
 
-                    if (currentDragType == DragType.LIST && reenteringBoardView) {
-                        val resume = notifyListenerListEnteredBoardView(x, y)
-                        if (!resume) {
+                    if (currentDragType == DragType.LIST && listViewReenteringBoardView) {
+                        val reattach = notifyListenerListEnteredBoardView(x, y)
+                        if (!reattach) {
                             return@OnDragListener true
                         }
                     }
                     onUpdateDrag(x, y)
                     if (currentDragType == DragType.CARD) {
                         //if moving a card the item touch helper only scrolls vertically inside itself
-                        //so we use the autoscrolled to move the main list recycler if needed based on
+                        //so we use the autoscroller to move the main list recycler if needed based on
                         //the drag location
                         mBobBoardScroller.updateDrag(x, y)
                     }
                     return@OnDragListener false
                 }
                 DragEvent.ACTION_DRAG_EXITED -> {
-                    Log.d("TEST", "ACTION_DRAG_EXITED")
-                    if (reenteringBoardView) {
+                    if (listViewReenteringBoardView) {
                         //dont process another exit as we haven't processed the last enter yet
-                        reenteringBoardView = false
+                        listViewReenteringBoardView = false
                         return@OnDragListener true
                     }
                     if (currentDragType == DragType.LIST) {
@@ -149,15 +195,7 @@ class BobBoardView : FrameLayout {
                 }
                 DragEvent.ACTION_DROP -> return@OnDragListener true
                 DragEvent.ACTION_DRAG_ENDED -> {
-                    Log.d("TEST", "ACTION_DRAG_DROP/ENDED")
                     initialEntryEventProcessed = false
-                    if (currentDragType == DragType.CARD) {
-                        //TODO probably shouldn't assume this is what everyone would want, add to callbacks?
-                        val listItemOnTopOf = listRecyclerView.findChildViewUnder(mLastDragPoint.x, mLastDragPoint.y)
-                        val listIndex = listRecyclerView.getChildAdapterPosition(listItemOnTopOf)
-                        //TODO definetly dont want this
-                        //listRecyclerView.smoothScrollToPosition(listIndex)
-                    }
                     stopDrag()
                     isDragging = false
                     return@OnDragListener true
@@ -176,7 +214,6 @@ class BobBoardView : FrameLayout {
         mBobBoardScroller = BobBoardScroller(listRecyclerView, 10, maxScrollSpeed,
                 object : BobBoardScroller.BobBoardScrollerCallback {
                     override fun onScrolled(accumulatedScroll: Int) {
-                        //Log.d("TEST", "TESTING!!!!")
                         onUpdateDrag(mLastDragPoint.x, mLastDragPoint.y)
                     }
                 })
@@ -185,85 +222,42 @@ class BobBoardView : FrameLayout {
     }
 
     private fun notifyListenerListEnteredBoardView(x: Float, y: Float): Boolean {
-        if (currentDragType != DragType.LIST) {
-            return false
-        }
+        listViewReenteringBoardView = false
 
-        reenteringBoardView = false
-        var destinationIndex = -1
-        val listItemViewUnder = listRecyclerView.findChildViewUnder(x, y)
-        if (listItemViewUnder == null) {
-            //we are definetly ontop of the list view, we got the notification after all lefts adjust
-            //for margin/padding/itemdecor and find out where we are
-            val itemCount = listRecyclerView.childCount
-            val lm = listRecyclerView.layoutManager
-            for (i in 0 until childCount) {
-                val child = listRecyclerView.getChildAt(i)
-                lm.calculateItemDecorationsForChild(child, tempRect)
-                val vlp = child.layoutParams as MarginLayoutParams
-                val top = child.top - tempRect.top - vlp.topMargin
-                val bottom = child.top + child.height + tempRect.bottom + vlp.bottomMargin
-                val left = child.left - tempRect.left - vlp.leftMargin
-                val right = child.left + tempRect.right + child.width + vlp.rightMargin
-
-                tempRect.set(left, top, right, bottom)
-                val contains = tempRect.contains(x.toInt(), y.toInt())
-                if (debugEnabled) Log.d(TAG, "notifyListenerListEnteredBoardView()| scanned child rect: $tempRect; touch point: (($x, $y); contains: $contains")
-                Log.d("TEST", "scanned child adapter position: ${listRecyclerView.getChildAdapterPosition(listRecyclerView.getChildAt(i))}")
-                if (contains) {
-                    //THIS IS A FLAW, A BIG FLAW.  The view is actually deleted but it still present to its position
-                    //is no position
-                    //right this is a problem I need to solve better, this can happen when the item we are
-                    //on top of is actually the currently exiting animation view.
-                    //we can check if there is a visible view before or after to get an adapter position and hope for the best
-                    destinationIndex = listRecyclerView.getChildAdapterPosition(child)
-                    for (i in 0 until childCount) {
-                        val c = listRecyclerView.getChildAt(i)
-                        val vh = listRecyclerView.getChildViewHolder(child)
-                        val lp = c.layoutParams as RecyclerView.LayoutParams
-                        Log.d("TEST", "itemId: ${vh.itemId}")
-                        Log.d("TEST", "isremoved: ${lp.isItemRemoved} invalid: ${lp.isViewInvalid} changed: ${lp.isItemChanged} ")
-                        Log.d("TEST", "layoutposition: ${vh.layoutPosition} oldPosition: ${vh.oldPosition}")
-                        Log.d("TEST", "scanned child adapter position: ${listRecyclerView.getChildAdapterPosition(listRecyclerView.getChildAt(i))}")
-                    }
-                    if (i != 0 && i<childCount) {
-                        val backupChild = listRecyclerView.getChildAt(i+1)
-                        destinationIndex = listRecyclerView.getChildAdapterPosition(backupChild) - 1
-                    } else if (i != 0) {
-                        val backupChild = listRecyclerView.getChildAt(i-1)
-                        destinationIndex = listRecyclerView.getChildAdapterPosition(backupChild) + 1
-                    }
-                    //this is a special case, if we come in from the very bottom unlike normal
-                    //we don't want to insert the card inplace of the previous one we want to
-                    //put it after the last one when we are the last child
-                    if (destinationIndex == itemCount -1 &&
-                            (y.toInt() - top) > ((right - left) / 2)) {
-                        destinationIndex += 1
-                    }
-                    break
-                }
-            }
-        } else {
-            destinationIndex = listRecyclerView.getChildAdapterPosition(listItemViewUnder)
-        }
-        val resume = mBoardViewListener?.onListDragEnteredBoardView(currentListViewHolder, destinationIndex)?: true
-        if (resume) {
+        // reattached here means that the adapter inserted the drag view back into the list when it
+        // endtered the board view again.  This is required to handle boards like trello clone
+        // that remove and add list as they enter and exit the board view
+        var destinationIndex = listAdapterPositionAtPoint(x, y)
+        val reattached = boardViewListener.onListDragEnteredBoardView(this, currentListViewHolder, destinationIndex)
+        if (reattached) {
             mItemTouchHelper.attachToRecyclerView(listRecyclerView)
         }
-        return resume
+        return reattached
+    }
+
+    private fun notifyListenerListExitedBoardView() {
+        // removed here means that the adapter deleted the original list when it left the confines
+        // of the board view, if the users adapter did that we need to stop listening and let it
+        // recycle
+        val removed = boardViewListener.onListDragExitedBoardView(this, currentListViewHolder!!)
+        if (removed) {
+            currentListViewHolder?.setIsRecyclable(true)
+            currentListViewHolder = null
+            mItemTouchHelper.attachToRecyclerView(null)
+            currentListIndex = NO_LIST_ACTIVE
+        }
     }
 
     fun listAdapterPositionAtPoint(x: Float, y: Float): Int {
         var destinationIndex = -1
         val listItemViewUnder = listRecyclerView.findChildViewUnder(x, y)
-        Log.d("TEST", "listItemViewUnder - $listItemViewUnder; (x,y): ($x, $y)")
         if (listItemViewUnder == null) {
-            //we are definetly ontop of the list view, we got the notification after all lefts adjust
-            //for margin/padding/itemdecor and find out where we are
             val itemCount = listRecyclerView.childCount
             val lm = listRecyclerView.layoutManager
-            for (i in 0 until childCount) {
+
+            for (i in 0 until itemCount) {
                 val child = listRecyclerView.getChildAt(i)
+
                 lm.calculateItemDecorationsForChild(child, tempRect)
                 val vlp = child.layoutParams as MarginLayoutParams
                 val top = child.top - tempRect.top - vlp.topMargin
@@ -273,47 +267,35 @@ class BobBoardView : FrameLayout {
 
                 tempRect.set(left, top, right, bottom)
                 val contains = tempRect.contains(x.toInt(), y.toInt())
-                if (debugEnabled) Log.d(TAG, "notifyListenerListEnteredBoardView()| scanned child rect: $tempRect; touch point: (($x, $y); contains: $contains")
-                Log.d("TEST", "scanned child adapter position: ${listRecyclerView.getChildAdapterPosition(listRecyclerView.getChildAt(i))}")
+
+                if (debugEnabled) Log.d(TAG, "notifyListenerListEnteredBoardView()| scanned " +
+                        "adapter position ${listRecyclerView.getChildAdapterPosition(listRecyclerView.getChildAt(i))}" +
+                        "child rect: $tempRect; touch point: (($x, $y); contains: $contains")
+
                 if (contains) {
-                    //THIS IS A FLAW, A BIG FLAW.  The view is actually deleted but it still present to its position
-                    //is no position
-                    //right this is a problem I need to solve better, this can happen when the item we are
-                    //on top of is actually the currently exiting animation view.
-                    //we can check if there is a visible view before or after to get an adapter position and hope for the best
+                    // The view can actually be deleted but is still present and its adapter position
+                    // is no position this can happen when the item we are
+                    // on top of is actually the currently exiting animation view.
+                    // we can check if there is a visible view before or after to get an adapter
+                    // position and hope for the best.
                     destinationIndex = listRecyclerView.getChildAdapterPosition(child)
-                    for (i in 0 until childCount) {
-                        val c = listRecyclerView.getChildAt(i)
-                        val vh = listRecyclerView.getChildViewHolder(child)
-                        val lp = c.layoutParams as RecyclerView.LayoutParams
-                        Log.d("TEST", "itemId: ${vh.itemId}")
-                        Log.d("TEST", "isremoved: ${lp.isItemRemoved} invalid: ${lp.isViewInvalid} changed: ${lp.isItemChanged} ")
-                        Log.d("TEST", "layoutposition: ${vh.layoutPosition} oldPosition: ${vh.oldPosition}")
-                        Log.d("TEST", "scanned child adapter position: ${listRecyclerView.getChildAdapterPosition(listRecyclerView.getChildAt(i))}")
-                    }
-                    if (i != 0 && i<childCount) {
+
+                    if (destinationIndex == -1 && i<childCount) {
                         val backupChild = listRecyclerView.getChildAt(i+1)
                         destinationIndex = listRecyclerView.getChildAdapterPosition(backupChild) - 1
-                    } else if (i != 0) {
+                    }
+                    if (destinationIndex == -1 && i != 0) {
                         val backupChild = listRecyclerView.getChildAt(i-1)
                         destinationIndex = listRecyclerView.getChildAdapterPosition(backupChild) + 1
                     }
-                    //this is a special case, if we come in from the very bottom unlike normal
-                    //we don't want to insert the card inplace of the previous one we want to
-                    //put it after the last one when we are the last child
-                    Log.d("TEST", "boardview - destinationIndex: $destinationIndex, itemCount: $itemCount, y: $y, top: $top, ")
-                    //TODO this is wrong, horizontal vs vertical
-                    if (destinationIndex == itemCount - 1 &&
-                            (y.toInt() - top) > ((bottom - top) / 2)) {
-                        Log.d("TEST", "DOES THIS HAPPEN???")
-                        destinationIndex += 1
-                    }
+
                     break
                 }
             }
         } else {
             destinationIndex = listRecyclerView.getChildAdapterPosition(listItemViewUnder)
         }
+
         return destinationIndex
     }
 
@@ -331,29 +313,29 @@ class BobBoardView : FrameLayout {
         currentListIndex = NO_LIST_ACTIVE
     }
 
-    private fun notifyListenerListExitedBoardView() {
-        val boardViewListener = mBoardViewListener?: return
-
-        val removed = boardViewListener.onListDragExitedBoardView(currentListViewHolder!!)
-        if (removed) {
-            currentListViewHolder?.setIsRecyclable(true)
-            currentListViewHolder = null
-            mItemTouchHelper.attachToRecyclerView(null)
-            currentListIndex = NO_LIST_ACTIVE
+    private fun notifyListenerCardExitedList() {
+        if (debugEnabled) {
+            Log.d(TAG, "notifyListenerCardExitedList()| drag child left active list adapter " +
+                    "position ${activeListViewHolder?.adapterPosition}; stored index ${activeListIndex}; " +
+                    "current adapter position ${currentListViewHolder?.adapterPosition}; stored index: " +
+                    "$currentListIndex")
         }
+        boardViewListener.onCardDragExitedList(this, activeListViewHolder!!,
+                mItemTouchHelper.selected as BobBoardListAdapter.CardViewHolder)
+        cardExitedListCallbackCalled = true
+        mItemTouchHelper.attachToRecyclerView(null)
+        activeListIndex = NO_LIST_ACTIVE
     }
 
-    private fun callCardDragExitedList() {
-        Log.d("TEST", "WTF is this being called?????????????????????????????")
-        mBoardViewListener?.onCardDragExitedList(currentListViewHolder!!, mItemTouchHelper.selected as BobBoardListAdapter.CardViewHolder)
-        listExitCallbackCalled = true
-        //mItemTouchHelper.attachToRecyclerView(null)
-        //currentListIndex = NO_LIST_ACTIVE
-        activeListIndex = NO_LIST_ACTIVE
-        //TODO we do not want to do this, if a view is in a recycler list we should keep that list alive
-        //so the drag view is still visibile at all times when we return??????
-        //currentListViewHolder?.setIsRecyclable(true)
-        //currentListViewHolder = null
+    private fun recyclerChildAdjustBounds(child: View, lm: RecyclerView.LayoutManager, rect: Rect) {
+        lm.calculateItemDecorationsForChild(child, tempRect)
+        val vlp = child.layoutParams as MarginLayoutParams
+        val top = child.top - tempRect.top - vlp.topMargin
+        val bottom = child.top + child.height + tempRect.bottom + vlp.bottomMargin + 1
+        val left = child.left - tempRect.left - vlp.leftMargin
+        val right = child.left + tempRect.right + child.width + vlp.rightMargin + 1
+
+        rect.set(left, top, right, bottom)
     }
 
     private fun onUpdateDrag(x: Float, y: Float) {
@@ -375,38 +357,38 @@ class BobBoardView : FrameLayout {
                      time a card is selected and will be updated as we move.  It will be set to NO_LIST_ACTIVE
                      when not on top of any list view (ie in the deadzone/item decoration)
          */
-        //this can return null when we are on the item decoration for the recyclerview because at
-        //that point we are between entries
-        //Log.d("TEST", "1")
+        assert(currentListIndex != NO_LIST_ACTIVE) { "current list index must exist during drag" }
+
         val listItemViewUnder = listRecyclerView.findChildViewUnder(x, y)
-        if (listItemViewUnder == null && !listExitCallbackCalled) {
-            Log.d("TEST", "2")
-            callCardDragExitedList()
+        if (listItemViewUnder == null && !cardExitedListCallbackCalled) {
+            notifyListenerCardExitedList()
             return
         } else if (listItemViewUnder == null) {
             return
         }
 
-        //Log.d("TEST", "3")
         val listIndex = listRecyclerView.getChildAdapterPosition(listItemViewUnder)
         val holder = listRecyclerView.getChildViewHolder(listItemViewUnder) as ListViewHolder<*>
         //if we have left our old list view and reached here without touching any deadzone therefor
         //not informing our listeners that the card has left its old list we need to trigger the call now
-        Log.d("TEST", "listIndex - $listIndex; activeListIndex: $activeListIndex; currentListIndex: $currentListIndex")
-        if (listIndex != activeListIndex && !listExitCallbackCalled) {
-            callCardDragExitedList()
+        if (listIndex != activeListIndex && !cardExitedListCallbackCalled) {
+            notifyListenerCardExitedList()
         }
 
         if (holder.recyclerView == null) {
-            //TODO this is a bit stupid, you can't drop in a column without a recyclerview so shouldn't really call this
-            val canCardDropInList = mBoardViewListener!!.canCardDropInList(holder)
-            mBoardViewListener?.onCardDragEnteredList(currentListViewHolder, holder, -1)
-            currentListViewHolder?.setIsRecyclable(true)
-            currentListViewHolder = holder
-            currentListViewHolder?.setIsRecyclable(false)
-            currentListIndex = listIndex
+            //TODO this is a bit stupid, you can't drop in a column without a recyclerview so
+            // shouldn't really call this
+            boardViewListener.canCardDropInList(this, holder)
+            boardViewListener.onCardDragEnteredList(this, currentListViewHolder, holder, null, -1)
+            //currentListViewHolder?.setIsRecyclable(true)
+            //currentListViewHolder = holder
+            //currentListViewHolder?.setIsRecyclable(false)
+            //currentListIndex = listIndex
             activeListIndex = listIndex
-            listExitCallbackCalled = false
+            activeListViewHolder?.setIsRecyclable(true)
+            activeListViewHolder = holder
+            activeListViewHolder?.setIsRecyclable(false)
+            cardExitedListCallbackCalled = false
             return
         }
 
@@ -423,21 +405,19 @@ class BobBoardView : FrameLayout {
                 x > cardRecyclerViewDrawingRectParent.right || y > cardRecyclerViewDrawingRectParent.bottom) {
             //here we are outside the card recycler but we are inside a list view, incase we jumped
             //here in one frame we need to call the callback to tell it we have moved
-            if (!listExitCallbackCalled) {
-                callCardDragExitedList()
+            if (!cardExitedListCallbackCalled) {
+                notifyListenerCardExitedList()
             }
             return
         }
 
-        //Log.d("TEST", "4")
         if (activeListIndex == NO_LIST_ACTIVE) {
-            Log.d("TEST", "5")
             if (debugEnabled) {
                 Log.d(TAG, "onUpdateDrag()| currentListIndex was NO_LIST_ACTIVE but we are on " +
                         "top of a list, scanning for destination index")
             }
-            Log.d("TEST", "x: ${x - cardRecyclerViewDrawingRectParent.left}, y: ${y - cardRecyclerViewDrawingRectParent.top}")
-            val cardViewUnder = cardRecyclerView.findChildViewUnder(x - cardRecyclerViewDrawingRectParent.left, y - cardRecyclerViewDrawingRectParent.top)
+            var cardViewUnder = cardRecyclerView.findChildViewUnder(x - cardRecyclerViewDrawingRectParent.left,
+                    y - cardRecyclerViewDrawingRectParent.top)
 
             var destinationIndex = cardRecyclerView.getChildAdapterPosition(cardViewUnder)
             val itemCount = cardRecyclerView.adapter.itemCount
@@ -453,7 +433,7 @@ class BobBoardView : FrameLayout {
                 //shortcut if the list is empty
                 if (childCount == 0) {
                     if (debugEnabled) {
-                        Log.d(TAG, "onUpdateDrag()| destinationIndex was -1 on view check, scanning all children for bounds collision")
+                        Log.d(TAG, "onUpdateDrag()| destination index set to 0 as no children found")
                     }
                     destinationIndex = 0
                 } else {
@@ -461,89 +441,97 @@ class BobBoardView : FrameLayout {
                     // point
                     for (i in 0 until childCount) {
                         val child = cardRecyclerView.getChildAt(i)
-                        lm.calculateItemDecorationsForChild(child, tempRect)
-                        val vlp = child.layoutParams as MarginLayoutParams
-                        val top = child.top - tempRect.top - vlp.topMargin
-                        val bottom = child.top + child.height + tempRect.bottom + vlp.bottomMargin
-                        val left = child.left - tempRect.left - vlp.leftMargin
-                        val right = child.left + tempRect.right + child.width + vlp.rightMargin
+                        recyclerChildAdjustBounds(child, lm, tempRect)
 
-                        tempRect.set(left, top, right, bottom)
-                        val contains = tempRect.contains((x - cardRecyclerViewDrawingRectParent.left).toInt(), (y - cardRecyclerViewDrawingRectParent.top).toInt())
-                        if (debugEnabled) Log.d(TAG, "onUpdateDrag()| scanned child rect: $tempRect; touch point: (${(x - cardRecyclerViewDrawingRectParent.left).toInt()}, ${(y - cardRecyclerViewDrawingRectParent.top).toInt()}); contains: $contains")
+                        val contains = tempRect.contains((x - cardRecyclerViewDrawingRectParent.left).toInt(),
+                                (y - cardRecyclerViewDrawingRectParent.top).toInt())
+                        if (debugEnabled) {
+                            Log.d(TAG, "onUpdateDrag()| scanned child rect: $tempRect; touch point: " +
+                                    "(${(x - cardRecyclerViewDrawingRectParent.left).toInt()}, " +
+                                    "${(y - cardRecyclerViewDrawingRectParent.top).toInt()}); " +
+                                    "contains: $contains; " +
+                                    "adapter position: ${cardRecyclerView.getChildAdapterPosition(child)}")
+                        }
                         if (contains) {
                             destinationIndex = cardRecyclerView.getChildAdapterPosition(child)
-                            if (destinationIndex == -1) {
-                                //right this is a problem I need to solve better, this can happen when the item we are
-                                //on top of is actually the currently exiting animation view.
-                                //we can check if there is a visible view before or after to get an adapter position and hope for the best
-                                if (i != 0 && i<childCount) {
-                                    val backupChild = cardRecyclerView.getChildAt(i+1)
-                                    destinationIndex = cardRecyclerView.getChildAdapterPosition(backupChild) - 1
-                                } else if (i != 0) {
-                                    val backupChild = cardRecyclerView.getChildAt(i-1)
-                                    destinationIndex = cardRecyclerView.getChildAdapterPosition(backupChild) + 1
-                                }
+                            if (destinationIndex < 0 && i<childCount) {
+                                val backupChild = cardRecyclerView.getChildAt(i+1)
+                                destinationIndex = cardRecyclerView.getChildAdapterPosition(backupChild) - 1
+                                Log.d(TAG, "onUpdateDrag()|destination index adjusted after forward one item - $destinationIndex")
+                            }
+                            if (destinationIndex < 0 && i != 0) {
+                                val backupChild = cardRecyclerView.getChildAt(i-1)
+                                destinationIndex = cardRecyclerView.getChildAdapterPosition(backupChild) + 1
+                                Log.d(TAG, "onUpdateDrag()|destination index adjusted after backtracking one item - $destinationIndex")
                             }
                             //this is a special case, if we come in from the very bottom unlike normal
                             //we don't want to insert the card inplace of the previous one we want to
                             //put it after the last one when we are the last child
-                            if (destinationIndex == itemCount -1 &&
+                            //TODO combine list logic with main list
+                            if (destinationIndex == itemCount - 1 &&
                                     (y.toInt() - cardRecyclerViewDrawingRectParent.top - top) > ((bottom - top) / 2)) {
                                 destinationIndex += 1
+                            }
+                            cardViewUnder = child
+
+                            //This can happen if a recycler is still animating all entries, its best
+                            //to try wait out a few iterations until we get a valid value
+                            if (destinationIndex < 0) {
+                                return
                             }
                             break
                         }
                     }
 
-                    if (destinationIndex == -1) {
+                    Log.d(TAG, "destination index is ${destinationIndex}")
+
+                    if (destinationIndex < 0) {
                         //TODO in theory this should be impossible now we adjust for margins on cards
                         destinationIndex = cardRecyclerView.adapter.itemCount
                     }
                 }
             } else if (destinationIndex == itemCount - 1) {
                 //destination index is the last item so we may be coming in from the bottom
-                lm.calculateItemDecorationsForChild(cardViewUnder, tempRect)
-                val vlp = cardViewUnder.layoutParams as MarginLayoutParams
-                val top = cardViewUnder.top - tempRect.top - vlp.topMargin
-                val bottom = cardViewUnder.top + cardViewUnder.height + tempRect.bottom + vlp.bottomMargin
-                val left = cardViewUnder.left - tempRect.left - vlp.leftMargin
-                val right = cardViewUnder.left + tempRect.right + cardViewUnder.width + vlp.rightMargin
-                if ((y.toInt() - cardRecyclerViewDrawingRectParent.top - top) > ((bottom - top) / 2)) {
+                recyclerChildAdjustBounds(cardViewUnder, lm, tempRect)
+                if ((y.toInt() - cardRecyclerViewDrawingRectParent.top - tempRect.top) >
+                        ((tempRect.bottom - tempRect.top) / 2)) {
                     destinationIndex += 1
                 }
             }
 
-            val canCardDropInList = mBoardViewListener!!.canCardDropInList(holder)
-            mBoardViewListener?.onCardDragEnteredList(currentListViewHolder, holder, destinationIndex)
-            currentListViewHolder?.setIsRecyclable(true)
-            currentListViewHolder = holder
-            currentListViewHolder?.setIsRecyclable(false)
+            val cardViewHolder: BobBoardListAdapter.CardViewHolder? = if (cardViewUnder != null) {
+                cardRecyclerView.getChildViewHolder(cardViewUnder) as BobBoardListAdapter.CardViewHolder
+            } else null
+            val canCardDropInList = boardViewListener.canCardDropInList(this, holder)
+            boardViewListener.onCardDragEnteredList(this, currentListViewHolder, holder, cardViewHolder, destinationIndex)
             if (canCardDropInList) {
+                currentListViewHolder?.setIsRecyclable(true)
+                currentListViewHolder = holder
+                currentListViewHolder?.setIsRecyclable(false)
                 currentListIndex = listIndex
+                mItemTouchHelper.attachToRecyclerView(holder.recyclerView)
             }
             activeListIndex = listIndex
-            listExitCallbackCalled = false
-
-            //mBoardViewListener?.onCardMoveList(holder, destinationIndex)
+            activeListViewHolder?.setIsRecyclable(true)
+            activeListViewHolder = holder
+            activeListViewHolder?.setIsRecyclable(false)
+            cardExitedListCallbackCalled = false
         } else {
-            mItemTouchHelper.drag(x - cardRecyclerViewDrawingRectParent.left, y - cardRecyclerViewDrawingRectParent.top)
+            mItemTouchHelper.drag(x - cardRecyclerViewDrawingRectParent.left,
+                    y - cardRecyclerViewDrawingRectParent.top)
         }
-
     }
 
     fun startListDrag(viewHolder: ListViewHolder<BobBoardListAdapter<*>>, x: Float, y: Float) {
         currentDragType = DragType.LIST
-        mItemTouchHelper!!.attachToRecyclerView(listRecyclerView)
-        mItemTouchHelper!!.startDrag(viewHolder, x, y)
+        mItemTouchHelper.attachToRecyclerView(listRecyclerView)
+        mItemTouchHelper.startDrag(viewHolder, x, y)
 
         currentListViewHolder = viewHolder
         currentListViewHolder?.setIsRecyclable(false)
         currentListIndex = currentListViewHolder?.adapterPosition!!
 
-        if (mBoardViewListener != null) {
-            mBoardViewListener?.onListDragStarted(viewHolder)
-        }
+        boardViewListener.onListDragStarted(this, viewHolder)
     }
 
     fun startCardDrag(listViewHolder: ListViewHolder<BobBoardListAdapter<*>>,
@@ -552,17 +540,22 @@ class BobBoardView : FrameLayout {
         currentDragType = DragType.CARD
         currentListIndex = listViewHolder.adapterPosition
         activeListIndex = listViewHolder.adapterPosition
+        activeListViewHolder = listViewHolder
+        activeListViewHolder!!.setIsRecyclable(false)
         mItemTouchHelper.attachToRecyclerView(listViewHolder.recyclerView)
         mItemTouchHelper.startDrag(cardViewHolder, x, y)
         currentListViewHolder = listViewHolder
         currentListViewHolder!!.setIsRecyclable(false)
         mBobBoardScroller.startTracking()
 
-        if (mBoardViewListener != null) {
-            mBoardViewListener?.onCardDragStarted(listViewHolder, cardViewHolder)
-        }
+        boardViewListener.onCardDragStarted(this, listViewHolder, cardViewHolder)
     }
 
+    /**
+     * Function to switch the list view holder that is being tracked, this is required if you are
+     * going to remove and readd the dragged list in the recyclerview.  This should be called by
+     * your adapter implementation when the newly added viewholder is created by the recyclerview
+     */
     fun switchListDrag(listViewHolder: ListViewHolder<BobBoardListAdapter<*>>) {
         if (currentDragType == DragType.NONE) {
             return
@@ -574,59 +567,57 @@ class BobBoardView : FrameLayout {
         mItemTouchHelper.startDragManual(listViewHolder)
     }
 
+    /**
+     * Function to switch the card view holder that is being dragged after it is removed and added
+     * to a new list, unlike with list dragging where switching logic is optional this call must
+     * be made by your adapter as a card is dragged around it needs to switch lists.  This is something
+     * I may remove in the future if I can, but it is a required manual step to support all the
+     * events generated to create the custom UI features
+     */
     fun switchCardDrag(listViewHolder: ListViewHolder<BobBoardListAdapter<*>>,
-                       cardViewHolder: BobBoardListAdapter.CardViewHolder, d: Boolean) {
+                       cardViewHolder: BobBoardListAdapter.CardViewHolder, callCardExitedListCallback: Boolean) {
         if (currentDragType == DragType.NONE) {
             return
         }
-        Log.d("TEST", "IS THIS WHAT IS HAPPENING")
-        //mBoardViewListener?.onCardDragEnteredList(currentListViewHolder!!, cardViewHolder)
         mItemTouchHelper.attachToRecyclerView(listViewHolder.recyclerView)
         mItemTouchHelper.startDragManual(cardViewHolder)
         currentListViewHolder?.setIsRecyclable(true)
         currentListViewHolder = listViewHolder
         currentListViewHolder?.setIsRecyclable(false)
 
-        if (d)
-            listExitCallbackCalled = false
-    }
-
-    fun stopDragEventIfStillRunning() {
-        if (currentDragType != DragType.NONE && !isDragging) {
-            stopDrag()
-        }
+        if (callCardExitedListCallback)
+            cardExitedListCallbackCalled = false
     }
 
     private fun stopDrag() {
-        Log.d("TEST", "stopDrag on bobboardview")
         if (currentDragType == DragType.CARD) {
-            mBoardViewListener?.onCardDragEnded(currentListViewHolder, mItemTouchHelper.selected as BobBoardListAdapter.CardViewHolder)
+            boardViewListener.onCardDragEnded(this, activeListViewHolder, currentListViewHolder,
+                    mItemTouchHelper.selected as BobBoardListAdapter.CardViewHolder)
         } else {
-            mBoardViewListener?.onListDragEnded(mItemTouchHelper.selected as ListViewHolder<BobBoardListAdapter<*>>?)
+            boardViewListener.onListDragEnded(this, mItemTouchHelper.selected as ListViewHolder<BobBoardListAdapter<*>>?)
         }
 
         mItemTouchHelper.endDrag()
         mItemTouchHelper.attachToRecyclerView(null)
         currentListViewHolder?.setIsRecyclable(true)
         currentListViewHolder = null
-        listExitCallbackCalled = false
+        cardExitedListCallbackCalled = false
         currentListIndex = NO_LIST_ACTIVE
+        activeListViewHolder?.setIsRecyclable(true)
+        activeListViewHolder = null
         activeListIndex = NO_LIST_ACTIVE
         currentDragType = DragType.NONE
         mBobBoardScroller.stopTracking()
     }
 
-    private fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
+    private fun onItemMove(fromPosition: Int, toPosition: Int) {
         if (currentDragType == DragType.CARD) {
-            if (mBoardViewListener != null) {
-                mBoardViewListener!!.onCardMove(currentListViewHolder!!, listRecyclerView.getChildAdapterPosition(currentListViewHolder!!.itemView), fromPosition, toPosition)
-            }
+            boardViewListener.onCardMove(this, currentListViewHolder!!,
+                    listRecyclerView.getChildAdapterPosition(currentListViewHolder!!.itemView),
+                    fromPosition, toPosition)
         } else if (currentDragType == DragType.LIST) {
-            if (mBoardViewListener != null) {
-                mBoardViewListener!!.onListMove(fromPosition, toPosition)
-            }
+            boardViewListener.onListMove(this, fromPosition, toPosition)
         }
-        return true
     }
 
     enum class DragType {
@@ -634,7 +625,8 @@ class BobBoardView : FrameLayout {
     }
 
     inner class SimpleItemTouchHelperCallback : BobBoardItemTouchHelper.Callback() {
-        override fun onMove(recyclerView: RecyclerView, source: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
+        override fun onMove(recyclerView: RecyclerView, source: RecyclerView.ViewHolder,
+                            target: RecyclerView.ViewHolder): Boolean {
             val manager = recyclerView.layoutManager as LinearLayoutManager
             val firstPos = manager.findFirstCompletelyVisibleItemPosition()
             var offsetTop = 0;
@@ -644,43 +636,39 @@ class BobBoardView : FrameLayout {
             }
 
             onItemMove(source.adapterPosition, target.adapterPosition)
+
             if(firstPos >= 0) {
-                Log.d("TEST", "************ ${source.adapterPosition} ${target.adapterPosition}")
                 manager.scrollToPositionWithOffset(firstPos, offsetTop)
             }
-            //currentListViewHolder?.recyclerView?.scrollToPosition(source.adapterPosition)
             return true
         }
 
-        override fun canDropOver(recyclerView: RecyclerView, current: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
+        override fun canDropOver(recyclerView: RecyclerView, current: RecyclerView.ViewHolder,
+                                 target: RecyclerView.ViewHolder): Boolean {
             if (currentDragType == DragType.LIST) {
-                return mBoardViewListener!!.canListDropOver(current as ListViewHolder<BobBoardListAdapter<*>>, target as ListViewHolder<BobBoardListAdapter<*>>)
+                return boardViewListener.canListDropOver(this@BobBoardView, current as ListViewHolder<BobBoardListAdapter<*>>,
+                        target as ListViewHolder<BobBoardListAdapter<*>>)
             }
             return true
         }
     }
 
     interface BobBoardViewListener {
-        fun onListDragStarted(listViewHolder: ListViewHolder<BobBoardListAdapter<*>>)
-        fun onCardDragStarted(listViewHolder: ListViewHolder<BobBoardListAdapter<*>>,
+        fun onListDragStarted(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>)
+        fun onCardDragStarted(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>,
                               cardViewHolder: BobBoardListAdapter.CardViewHolder)
-        fun onListDragEnded(listViewHolder: ListViewHolder<BobBoardListAdapter<*>>?)
-        fun onCardDragEnded(listViewHolder: ListViewHolder<BobBoardListAdapter<*>>?,
+        fun onListDragEnded(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>?)
+        fun onCardDragEnded(boardView: BobBoardView, activeListViewHolder: ListViewHolder<BobBoardListAdapter<*>>?, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>?,
                             cardViewHolder: BobBoardListAdapter.CardViewHolder?)
-        fun onListMove(fromPosition: Int, toPosition: Int)
-        fun onCardMove(listViewHolder: BobBoardAdapter.ListViewHolder<*>, listIndex: Int, fromPosition: Int, toPosition: Int)
-        fun onCardMoveList(toViewHolder: BobBoardAdapter.ListViewHolder<*>, toIndex: Int)
-        fun onCardDragExitedList(listViewHolder: ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder)
-        fun canCardDropInList(listViewHolder: ListViewHolder<BobBoardListAdapter<*>>): Boolean
-        fun canListDropOver(listViewHolder: ListViewHolder<BobBoardListAdapter<*>>, otherListViewHolder: ListViewHolder<BobBoardListAdapter<*>>): Boolean
+        fun onListMove(boardView: BobBoardView, fromPosition: Int, toPosition: Int)
+        fun onCardMove(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<*>, listIndex: Int, fromPosition: Int, toPosition: Int)
+        fun onCardDragExitedList(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder)
+        fun canCardDropInList(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>): Boolean
+        fun canListDropOver(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>, otherListViewHolder: ListViewHolder<BobBoardListAdapter<*>>): Boolean
 
-        fun onCardDragEnteredList(previousListViewHolder: ListViewHolder<BobBoardListAdapter<*>>?, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>, toIndex: Int)
-        fun onListDragExitedBoardView(listViewHolder: ListViewHolder<BobBoardListAdapter<*>>): Boolean
-        fun onListDragEnteredBoardView(listViewHolder: ListViewHolder<BobBoardListAdapter<*>>?, overIndex: Int): Boolean
-
-
-        //fun canDropOnList(listIndex: Int)
-        //fun canDropOnItem(listIndex: Int, itemIndex: Int)
+        fun onCardDragEnteredList(boardView: BobBoardView, previousListViewHolder: ListViewHolder<BobBoardListAdapter<*>>?, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder?, toIndex: Int)
+        fun onListDragExitedBoardView(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>): Boolean
+        fun onListDragEnteredBoardView(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>?, overIndex: Int): Boolean
     }
 
     companion object {

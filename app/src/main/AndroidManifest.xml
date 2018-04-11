@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.bobstuff.bobboardview.app">
 
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -20,7 +20,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".scrum.ScrumActivity" />
-        <activity android:name=".reuse.ReuseSampleActivity"></activity>
+        <activity android:name=".reuse.ReuseSampleActivity" />
+        <activity android:name=".simple.SimpleActivity"></activity>
     </application>
 
 </manifest>

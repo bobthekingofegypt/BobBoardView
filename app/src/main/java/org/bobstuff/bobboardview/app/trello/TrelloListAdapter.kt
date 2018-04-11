@@ -1,22 +1,17 @@
 package org.bobstuff.bobboardview.app.trello
 
-import android.content.ClipData
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import org.bobstuff.bobboardview.*
 
-import org.bobstuff.bobboardview.OnLongTouchHandlerCallback
 import org.bobstuff.bobboardview.app.R
-import org.bobstuff.bobboardview.BobBoardListAdapter
-import org.bobstuff.bobboardview.LongTouchHandler
+import org.bobstuff.bobboardview.app.trello.model.BoardList
 import org.bobstuff.bobboardview.app.trello.model.Card
 import org.bobstuff.bobboardview.app.util.SimpleShadowBuilder
-
-import java.util.ArrayList
-import java.util.Collections
 
 /**
  * Created by bob
@@ -24,41 +19,12 @@ import java.util.Collections
 
 class TrelloListAdapter(
         private val mContext: Context,
+        dragOperation: BobBoardDragOperation<Card, BoardList>,
         cardEventCallbacks: BobBoardListAdapter.CardEventCallbacks
-) : BobBoardListAdapter<TrelloListAdapter.TrelloCardViewHolder>(cardEventCallbacks) {
+) : BobBoardListArrayAdapter<TrelloListAdapter.TrelloCardViewHolder, Card, BoardList>(cardEventCallbacks, dragOperation) {
 
-    private val cards: MutableList<Card> = mutableListOf()
-
-    fun setItems(cards: List<Card>) {
-        this.cards.clear()
-        this.cards.addAll(cards)
-        this.notifyDataSetChanged()
-    }
-
-    override fun getItemCount(): Int {
-        return cards.size
-    }
-
-    fun removeItem(position: Int): Card {
-        val card = cards.removeAt(position)
-        notifyItemRemoved(position)
-        return card
-    }
-
-    fun insertItem(position: Int, card: Card) {
-        this.insertItem(position, card, true)
-    }
-
-    fun insertItem(position: Int, card: Card, isCardAddedDuringDrag: Boolean) {
-        cards.add(position, card)
-        this.isCardAddedDuringDrag = isCardAddedDuringDrag
-        notifyItemInserted(position)
-    }
-
-    fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        Collections.swap(cards, fromPosition, toPosition)
-        notifyItemMoved(fromPosition, toPosition)
-        return true
+    override fun getItemId(position: Int): Long {
+        return cards[position].id.hashCode().toLong()
     }
 
     override fun onBindViewHolder(viewHolder: TrelloListAdapter.TrelloCardViewHolder, position: Int) {
@@ -68,11 +34,9 @@ class TrelloListAdapter(
 
         viewHolder.itemView.setOnTouchListener(LongTouchHandler(mContext, object : OnLongTouchHandlerCallback {
             override fun onLongPress(event: MotionEvent) {
-                cardEventCallbacks.cardSelectedForDrag(viewHolder, event.x, event.y)
-
-                val data = ClipData.newPlainText("", "")
                 val shadowBuilder = SimpleShadowBuilder(viewHolder.itemView, 1.0, 1f, event.x, event.y)
-                viewHolder.itemView.startDrag(data, shadowBuilder, null, 0)
+                startDrag(viewHolder, shadowBuilder, event.x, event.y)
+                cardEventCallbacks.cardSelectedForDrag(viewHolder, event.x, event.y)
                 viewHolder.itemView.visibility = View.INVISIBLE
             }
 
@@ -86,7 +50,7 @@ class TrelloListAdapter(
     }
 
     override fun onViewAttachedToWindow(viewHolder: TrelloCardViewHolder) {
-        if (isCardAddedDuringDrag) {
+        if (isCardAddedDuringDrag && addedCardId == viewHolder.itemId) {
             viewHolder.itemView.visibility = View.INVISIBLE
         }
         super.onViewAttachedToWindow(viewHolder)

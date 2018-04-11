@@ -43,7 +43,6 @@ class BobBoardScroller(private val recyclerView: RecyclerView,
     private var accumulatedScrollX: Int = 0
     private val scrollRunnable: Runnable = object : Runnable {
         override fun run() {
-            //Log.d("TEST", "MONKEY!!!!!")
             if (scrollIfNecessary()) {
                 bobBoardScrollerCallback.onScrolled(accumulatedScrollX)
                 recyclerView.removeCallbacks(this)
@@ -89,8 +88,8 @@ class BobBoardScroller(private val recyclerView: RecyclerView,
         val value = (cappedScroll * sDragScrollInterpolator
                 .getInterpolation(timeRatio)).toInt()
 
-        return if (value == 0) {
-            1
+        return if (value < 6) {
+            6
         } else value
     }
 
@@ -109,7 +108,7 @@ class BobBoardScroller(private val recyclerView: RecyclerView,
             dx < scrollZone && recyclerView.canScrollHorizontally(LEFT) ->
                 -interpolateOutOfBoundsScroll(scrollZone, dx, scrollDuration)
             dx > width - scrollZone && recyclerView.canScrollHorizontally(RIGHT) ->
-                interpolateOutOfBoundsScroll(scrollZone, dx - (width - scrollZone), scrollDuration)
+                interpolateOutOfBoundsScroll(scrollZone, scrollZone - (dx - (width - scrollZone)), scrollDuration)
             else -> 0
         }
 

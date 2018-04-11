@@ -44,6 +44,9 @@ abstract class BobBoardListAdapter<T : BobBoardListAdapter.CardViewHolder>
         protected var cardEventCallbacks: CardEventCallbacks,
         @field:Transient private val debugLoggingEnabled: Boolean = true
 ) : RecyclerView.Adapter<T>() {
+    init {
+        setHasStableIds(true)
+    }
     /**
      * flag to indicate that the next view added to the window was triggered because of a user drag.
      * Currently I'm assuming the serial execution of events means there shouldn't be another view
@@ -60,6 +63,8 @@ abstract class BobBoardListAdapter<T : BobBoardListAdapter.CardViewHolder>
             mAddedDuringDrag = b
         }
 
+    var addedCardId: Long = -1
+
     /**
      * Override this method if you want to handle custom changes to the added view, ex. make it
      * invisible.  Just remember to call super
@@ -69,7 +74,7 @@ abstract class BobBoardListAdapter<T : BobBoardListAdapter.CardViewHolder>
             Log.d(TAG, "onViewAttachedToWindow() | mAddedDuringDrag: " + mAddedDuringDrag
                     + "; adapter position: " + viewHolder.adapterPosition)
         }
-        if (mAddedDuringDrag) {
+        if (mAddedDuringDrag && addedCardId == viewHolder.itemId) {
             mAddedDuringDrag = false
             cardEventCallbacks.cardMovedDuringDrag(viewHolder)
         }
@@ -82,7 +87,7 @@ abstract class BobBoardListAdapter<T : BobBoardListAdapter.CardViewHolder>
      */
     interface CardEventCallbacks {
         fun cardSelectedForDrag(viewHolder: BobBoardListAdapter.CardViewHolder, x: Float, y: Float)
-        fun cardMovedDuringDrag(viewHolder: BobBoardListAdapter.CardViewHolder, d: Boolean)
+        fun cardMovedDuringDrag(viewHolder: BobBoardListAdapter.CardViewHolder, callCardExitedListCallback: Boolean)
         fun cardMovedDuringDrag(viewHolder: BobBoardListAdapter.CardViewHolder)
     }
 
@@ -92,8 +97,8 @@ abstract class BobBoardListAdapter<T : BobBoardListAdapter.CardViewHolder>
             bobBoardAdapter.boardView!!.startCardDrag(listViewHolder, viewHolder, x, y)
         }
 
-        override fun cardMovedDuringDrag(viewHolder: BobBoardListAdapter.CardViewHolder, d: Boolean) {
-            bobBoardAdapter.boardView!!.switchCardDrag(listViewHolder, viewHolder, d)
+        override fun cardMovedDuringDrag(viewHolder: BobBoardListAdapter.CardViewHolder, callCardExitedListCallback: Boolean) {
+            bobBoardAdapter.boardView!!.switchCardDrag(listViewHolder, viewHolder, callCardExitedListCallback)
         }
 
         override fun cardMovedDuringDrag(viewHolder: BobBoardListAdapter.CardViewHolder) {

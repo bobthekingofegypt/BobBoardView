@@ -10,14 +10,20 @@ import java.util.List;
 public class BoardList {
     private String title;
     private List<Card> cards;
+    private long id;
 
-    public BoardList(String title) {
-        this(title, new ArrayList<Card>());
+    public BoardList(long id, String title) {
+        this(id, title, new ArrayList<>());
     }
 
-    public BoardList(final String title, final List<Card> cards) {
+    public BoardList(final Long id, final String title, final List<Card> cards) {
+        this.id = id;
         this.title = title;
         this.cards = cards;
+    }
+
+    public long getId() {
+        return id;
     }
 
     public String getTitle() {

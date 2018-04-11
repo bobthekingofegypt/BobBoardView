@@ -341,7 +341,7 @@ class BobBoardItemTouchHelper(private val maxScrollSpeed: Int,
                 dragX < scrollZone ->
                     -interpolateOutOfBoundsScroll(scrollZone, dragX.toInt(), scrollDuration)
                 dragX > width - scrollZone ->
-                    interpolateOutOfBoundsScroll(scrollZone, dragX.toInt() - (width - scrollZone), scrollDuration)
+                    interpolateOutOfBoundsScroll(scrollZone, scrollZone - (dragX.toInt() - (width - scrollZone)), scrollDuration)
                 else -> 0
             }
         }
@@ -350,7 +350,7 @@ class BobBoardItemTouchHelper(private val maxScrollSpeed: Int,
                 dragY < scrollZone ->
                     -interpolateOutOfBoundsScroll(scrollZone, dragY.toInt(), scrollDuration)
                 dragY > height - scrollZone ->
-                    interpolateOutOfBoundsScroll(scrollZone, dragY.toInt() - (height - scrollZone), scrollDuration)
+                    interpolateOutOfBoundsScroll(scrollZone, scrollZone - (dragY.toInt() - (height - scrollZone)), scrollDuration)
                 else -> 0
             }
         }
@@ -383,8 +383,8 @@ class BobBoardItemTouchHelper(private val maxScrollSpeed: Int,
         val value = (cappedScroll * BobBoardScroller.sDragScrollInterpolator
                 .getInterpolation(timeRatio)).toInt()
 
-        return if (value == 0) {
-            1
+        return if (value < 6) {
+            6
         } else value
     }
 
@@ -393,8 +393,10 @@ class BobBoardItemTouchHelper(private val maxScrollSpeed: Int,
     }
 
     override fun onChildViewDetachedFromWindow(view: View) {
+        Log.d("TEST", "Child detatched from window")
         val holder = recyclerView?.getChildViewHolder(view) ?: return
         if (selected != null && holder === selected) {
+            Log.d("TEST", "idling because tracked child was detached")
             select(null, ACTION_STATE_IDLE)
         }
     }

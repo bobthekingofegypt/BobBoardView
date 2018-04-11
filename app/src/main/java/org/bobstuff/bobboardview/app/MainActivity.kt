@@ -9,13 +9,12 @@ import android.support.v7.widget.DividerItemDecoration
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.Toolbar
-import org.bobstuff.bobboardview.app.R
 import android.widget.TextView
 import android.view.ViewGroup
 import android.view.LayoutInflater
 import android.view.View
-import org.bobstuff.bobboardview.app.reuse.ReuseSampleActivity
 import org.bobstuff.bobboardview.app.scrum.ScrumActivity
+import org.bobstuff.bobboardview.app.simple.SimpleActivity
 import org.bobstuff.bobboardview.app.trello.BoardActivity
 
 
@@ -33,14 +32,19 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         recyclerView.addItemDecoration(DividerItemDecoration(recyclerView.context, LinearLayoutManager.VERTICAL))
 
-        val data = listOf("Trello style", "Scrum board view", "Large dataset, reuse")
+        val data = listOf("Trello style", "Scrum board view", "Large dataset, reuse", "Simple example")
         val adapter = MyRecyclerViewAdapter(this, data)
         adapter.setClickListener(object: ItemClickListener {
             override fun onItemClick(view: View, position: Int) {
                 when (position) {
                     0 -> startActivity(Intent(this@MainActivity, BoardActivity::class.java))
                     1 -> startActivity(Intent(this@MainActivity, ScrumActivity::class.java))
-                    2 -> startActivity(Intent(this@MainActivity, ReuseSampleActivity::class.java))
+                    2 -> {
+                        val intent = Intent(this@MainActivity, ScrumActivity::class.java)
+                        intent.putExtra("REUSE_DATA", true)
+                        startActivity(intent)
+                    }
+                    3 -> startActivity(Intent(this@MainActivity, SimpleActivity::class.java))
                 }
             }
         })
