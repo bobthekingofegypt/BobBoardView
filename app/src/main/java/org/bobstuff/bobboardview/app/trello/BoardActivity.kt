@@ -41,6 +41,7 @@ class BoardActivity : AppCompatActivity() {
     private var dragOperationInsideArchiveView: Boolean = false
     private var dragOperationEnteredArchiveView: Boolean = false
     private var dragOperationPositionInArchiveView = PointF()
+    private var largeScreen: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +60,7 @@ class BoardActivity : AppCompatActivity() {
         boardView.boardAdapter = trelloBoardAdapter
         boardView.setBoardViewListener(listener)
         boardView.listRecyclerView.contentDescription = "column recycler"
+        boardView.listRecyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
 
         val dividerSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 20f, resources.displayMetrics)
         val dividerItemDecoration = BobBoardSimpleDividers(dividerSizeInPixels.toInt(), BobBoardSimpleDividersOrientation.HORIZONTAL)
@@ -68,6 +70,9 @@ class BoardActivity : AppCompatActivity() {
         val listSize = resources.getDimensionPixelSize(R.dimen.trello_item_list_width)
         if ((windowSize.x / listSize) < 2) {
             snapHelper = LinearSnapHelper()
+        }
+        if ((windowSize.x / listSize) > 3) {
+            largeScreen = true
         }
         snapHelper?.attachToRecyclerView(boardView.listRecyclerView)
 
@@ -157,11 +162,13 @@ class BoardActivity : AppCompatActivity() {
                 currentDragOperation.orphaned = false
             }
 
+            val finalColumnPosition = currentDragOperation.listIndex
+
             super.onCardDragEnded(boardView, activeListViewHolder, listViewHolder, cardViewHolder)
 
             cardViewHolder?.itemView?.visibility = View.VISIBLE
 
-            val anim = centeredCircleAnimation(archiveView)
+            val anim = centeredCircleAnimation(archiveView, true)
             anim.addListener(object : Animator.AnimatorListener {
                 override fun onAnimationStart(animation: Animator) {}
 
@@ -171,6 +178,7 @@ class BoardActivity : AppCompatActivity() {
                     val actionBar = supportActionBar!!
                     actionBar.setDisplayShowHomeEnabled(true)
                     actionBar.setDisplayShowTitleEnabled(true)
+                    snapHelper?.attachToRecyclerView(boardView.listRecyclerView)
                 }
 
                 override fun onAnimationCancel(animation: Animator) {}
@@ -179,7 +187,7 @@ class BoardActivity : AppCompatActivity() {
             })
             anim.start()
 
-            snapHelper?.attachToRecyclerView(boardView.listRecyclerView)
+            boardView.listRecyclerView.smoothScrollToPosition(finalColumnPosition)
         }
 
         override fun onListDragStarted(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>) {
@@ -190,7 +198,7 @@ class BoardActivity : AppCompatActivity() {
             actionBar.setDisplayShowHomeEnabled(false)
             actionBar.setDisplayShowTitleEnabled(false)
 
-            val anim = centeredCircleAnimation(archiveView)
+            val anim = centeredCircleAnimation(archiveView, false)
             archiveView.visibility = View.VISIBLE
             anim.start()
 
@@ -206,12 +214,13 @@ class BoardActivity : AppCompatActivity() {
             actionBar.setDisplayShowHomeEnabled(false)
             actionBar.setDisplayShowTitleEnabled(false)
 
-            val anim = centeredCircleAnimation(archiveView)
+            val anim = centeredCircleAnimation(archiveView, false)
             archiveView.visibility = View.VISIBLE
             anim.start()
         }
 
         override fun onListDragEnded(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>?) {
+            Log.d("TEST", "DID THIS THINGY GET CALLED")
             if (dragOperationInsideArchiveView && currentDragOperation.orphaned) {
                 currentDragOperation.orphaned = false
             }
@@ -219,7 +228,7 @@ class BoardActivity : AppCompatActivity() {
             super.onListDragEnded(boardView, listViewHolder)
             listViewHolder?.itemView?.visibility = View.VISIBLE
 
-            val anim = centeredCircleAnimation(archiveView)
+            val anim = centeredCircleAnimation(archiveView, true)
             anim.addListener(object : Animator.AnimatorListener {
                 override fun onAnimationStart(animation: Animator) {}
 
@@ -238,7 +247,7 @@ class BoardActivity : AppCompatActivity() {
                 override fun onAnimationRepeat(animation: Animator) {}
             })
             anim.start()
-            listViewHolder?.let { trelloBoardAdapter.triggerScaleUpAnimationForListDrag(it) }
+            listViewHolder?.let { trelloBoardAdapter.triggerScaleUpAnimationForListDrag(it, !largeScreen) }
 
             Toast.makeText(this@BoardActivity, "List moved from col: ${currentDragOperation.startingListIndex} " +
                     "to col: ${currentDragOperation.listIndex}", Toast.LENGTH_LONG).show()
@@ -267,10 +276,13 @@ class BoardActivity : AppCompatActivity() {
         }
     }
 
-    private fun centeredCircleAnimation(view: View): Animator {
+    private fun centeredCircleAnimation(view: View, reverse: Boolean): Animator {
         val cx = view.width / 2
         val cy = view.height / 2
         val finalRadius = Math.hypot(cx.toDouble(), cy.toDouble()).toFloat()
+        if (reverse) {
+            return ViewAnimationUtils.createCircularReveal(view, cx, cy, finalRadius, 0f)
+        }
         return ViewAnimationUtils.createCircularReveal(view, cx, cy, 0f, finalRadius)
     }
 

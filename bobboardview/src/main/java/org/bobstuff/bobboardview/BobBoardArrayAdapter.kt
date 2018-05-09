@@ -22,16 +22,21 @@ abstract class BobBoardArrayAdapter<T : BobBoardAdapter.ListViewHolder<*>, X, V>
     private val columnScrollPositions: MutableMap<V, Parcelable> = mutableMapOf()
 
     fun startDrag(holder: ListViewHolder<BobBoardListAdapter<*>>,
-            dragShadowBuilder: View.DragShadowBuilder, x: Float, y: Float) {
-        boardView?.startListDrag(holder as ListViewHolder<BobBoardListAdapter<*>>, x, y)
+            dragShadowBuilder: View.DragShadowBuilder, x: Float, y: Float): Boolean {
 
         val data = ClipData.newPlainText("", "")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             holder.itemView.startDragAndDrop(data, dragShadowBuilder, null, 0)
         } else {
             @Suppress("DEPRECATION")
             holder.itemView.startDrag(data, dragShadowBuilder, null, 0)
         }
+
+        if (result) {
+            boardView?.startListDrag(holder as ListViewHolder<BobBoardListAdapter<*>>, x, y)
+        }
+        Log.d("TEST", "RESULT $result")
+        return result
     }
 
     fun removeItem(index: Int): V {

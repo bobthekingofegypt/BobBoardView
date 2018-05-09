@@ -19,6 +19,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.View.DRAG_FLAG_OPAQUE
 import android.view.ViewGroup
+import android.view.animation.AccelerateInterpolator
 import android.widget.TextView
 import org.bobstuff.bobboardview.*
 
@@ -90,9 +91,12 @@ class TrelloBoardAdapter(private val context: Context, dragOperation: BobBoardDr
                     val action = event.action
                     when (action and MotionEvent.ACTION_MASK) {
                         MotionEvent.ACTION_DOWN -> {
-                            val shadowBuilder = SimpleShadowBuilder(holder.itemView, 3.0, 0.7f, event.x, event.y)
-                            startDrag(holder, shadowBuilder, event.x, event.y)
-                            holder.itemView.visibility = View.INVISIBLE
+                            if (!currentlyAnimating && !currentlyScaled) {
+                                val shadowBuilder = SimpleShadowBuilder(holder.itemView, 3.0, 0.7f, event.x, event.y)
+                                if (startDrag(holder, shadowBuilder, event.x, event.y)) {
+                                    holder.itemView.visibility = View.INVISIBLE
+                                }
+                            }
                         }
                     }
                     true
@@ -157,26 +161,27 @@ class TrelloBoardAdapter(private val context: Context, dragOperation: BobBoardDr
             ++i
         }
 
-        val lm = recyclerView.layoutManager
-        val rect = Rect()
-        lm.calculateItemDecorationsForChild(viewHolder.itemView, rect)
-        val offset = (width * 1.5) - (width * 1.5 * 0.7)
+        boardView.enableDragEvents = false
 
         animator = ValueAnimator.ofInt(width, scaledWidth)
         animator?.addUpdateListener(LayoutWidthUpdateListener())
-        animator?.addUpdateListener(ScrollInTimeUpdateListener(recyclerView.scrollX, offset.toInt(), false))
+        animator?.addUpdateListener(ScrollInTimeUpdateListener(viewHolder.itemView))
         animator?.addListener(ViewHolderAnimatorListener())
         animator?.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
                 currentlyScaled = true
                 currentlyAnimating = false
                 animatingViewHolders.clear()
+
+                boardView.enableDragEvents = true
             }
         })
+        animator?.duration = 500L
+        animator?.interpolator = AccelerateInterpolator()
         animator?.start()
     }
 
-    fun triggerScaleUpAnimationForListDrag(viewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>) {
+    fun triggerScaleUpAnimationForListDrag(viewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, scrollToCenter: Boolean) {
         val boardView = boardView!!
         val recyclerView = boardView.listRecyclerView
 
@@ -200,9 +205,10 @@ class TrelloBoardAdapter(private val context: Context, dragOperation: BobBoardDr
             animator?.cancel()
         }
 
+        boardView.listRecyclerView.requestChildFocus(viewHolder.itemView, viewHolder.itemView)
         val animator = ValueAnimator.ofInt(startValue, width)
         animator.addUpdateListener(LayoutWidthUpdateListener())
-        animator.addUpdateListener(ScrollInTimeUpdateListener2(viewHolder.itemView))
+        animator.addUpdateListener(ScrollInTimeUpdateListener2(viewHolder.itemView, boardView.listRecyclerView.width/2, scrollToCenter))
         animator.addListener(ViewHolderAnimatorListener())
         animator.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
@@ -212,12 +218,16 @@ class TrelloBoardAdapter(private val context: Context, dragOperation: BobBoardDr
                 animatingViewHolders.clear()
             }
         })
+        animator.duration = 500L
+        animator.interpolator = AccelerateInterpolator()
         animator.start()
     }
 
     override fun onViewAttachedToWindow(viewHolder: TrelloListViewHolderBase) {
-        if (isListAddedDuringDrag && addedListId == viewHolder.itemId) {
+        if (listDraggingActivated && isListAddedDuringDrag && addedListId == viewHolder.itemId) {
             viewHolder?.itemView?.visibility = View.INVISIBLE
+        } else if (!listDraggingActivated) {
+            addedListId = -1
         }
         when {
             currentlyAnimating -> {
@@ -267,39 +277,30 @@ class TrelloBoardAdapter(private val context: Context, dragOperation: BobBoardDr
         }
     }
 
-    private inner class ScrollInTimeUpdateListener(val startingX: Int, val offset: Int, val reverse: Boolean) : ValueAnimator.AnimatorUpdateListener {
-        var total = 0
+    private inner class ScrollInTimeUpdateListener(val view: View) : ValueAnimator.AnimatorUpdateListener {
+        var center = view.left + (view.width/2)
+
         override fun onAnimationUpdate(animation: ValueAnimator) {
-            val progress = animation.animatedFraction
-            val step = (progress * offset).toInt()
-            var scrollBy = step - total
-            total = total + scrollBy
-
-            scrollBy = scrollBy * (if (reverse) { 1 } else -1)
-
-            //Log.d("TEST", "Step: $step; progress: $progress; scrollBy: $scrollBy; total: $total; offset: $offset")
-
-            boardView?.listRecyclerView?.scrollBy(scrollBy, 0)
+            val newCenter = view.left + (view.width/2)
+            val change = (newCenter - center)
+            boardView?.listRecyclerView?.scrollBy(change, 0)
         }
     }
 
-    private inner class ScrollInTimeUpdateListener2(val view: View) : ValueAnimator.AnimatorUpdateListener {
-        var total = 0
+    private inner class ScrollInTimeUpdateListener2(val view: View, val containerCenter: Int, val scrollToCenter: Boolean) : ValueAnimator.AnimatorUpdateListener {
+        var left = view.left
         override fun onAnimationUpdate(animation: ValueAnimator) {
-            val lm = boardView!!.listRecyclerView.layoutManager
-            val orientationHelper = orientationHelper!!
-            val childCenter = orientationHelper.getDecoratedStart(view) +
-                    orientationHelper.getDecoratedMeasurement(view) / 2
-            val containerCenter: Int
-            if (lm.clipToPadding) {
-                containerCenter = orientationHelper.getStartAfterPadding() + orientationHelper.getTotalSpace() / 2
-            } else {
-                containerCenter = orientationHelper.getEnd() / 2
-            }
-            val distanceToCenter = childCenter - containerCenter
-            //Log.d("TEST", "distancetocenter: $distanceToCenter")
+            val newLeft = view.left
+            val change = newLeft - left
+            boardView?.listRecyclerView?.scrollBy(change, 0)
 
-            boardView?.listRecyclerView?.scrollBy(distanceToCenter, 0)
+            if (scrollToCenter) {
+                val childCenter = left + (view.width / 2)
+                val distanceToCenter = ((childCenter - containerCenter) * animation.animatedFraction).toInt()
+
+                boardView?.listRecyclerView?.scrollBy(distanceToCenter, 0)
+                left -= distanceToCenter
+            }
         }
     }
 

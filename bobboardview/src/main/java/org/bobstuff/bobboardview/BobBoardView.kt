@@ -116,6 +116,7 @@ class BobBoardView : FrameLayout {
     private var activeListIndex = NO_LIST_ACTIVE
     private var listViewReenteringBoardView: Boolean = false
     private var initialEntryEventProcessed: Boolean = false
+    var enableDragEvents = true
 
     constructor(context: Context) : super(context) {
         init()
@@ -148,6 +149,10 @@ class BobBoardView : FrameLayout {
             val action = event.action
             val x = event.x
             val y = event.y
+
+            if (!enableDragEvents && !(action == DragEvent.ACTION_DRAG_ENDED)) {
+                return@OnDragListener true
+            }
 
             when (action) {
                 DragEvent.ACTION_DRAG_STARTED -> {
@@ -195,6 +200,7 @@ class BobBoardView : FrameLayout {
                 }
                 DragEvent.ACTION_DROP -> return@OnDragListener true
                 DragEvent.ACTION_DRAG_ENDED -> {
+                    Log.d("TEST", "!!!!!!!!!!!! called drag ended")
                     initialEntryEventProcessed = false
                     stopDrag()
                     isDragging = false
