@@ -63,6 +63,20 @@ class ScrumActivity : AppCompatActivity() {
         styleToolbarContent(toolbar, Color.parseColor("#bbbbbb"))
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBundle("boardViewState", boardView.onSaveInstance() as Bundle)
+
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
+        super.onRestoreInstanceState(savedInstanceState)
+
+        savedInstanceState?.run {
+            boardView.onRestoreState(savedInstanceState.getBundle("boardViewState"))
+        }
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when(item.itemId) {
             android.R.id.home -> finish()

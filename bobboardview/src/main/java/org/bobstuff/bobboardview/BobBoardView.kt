@@ -3,6 +3,9 @@ package org.bobstuff.bobboardview
 import android.content.Context
 import android.graphics.PointF
 import android.graphics.Rect
+import android.os.Bundle
+import android.os.Parcel
+import android.os.Parcelable
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.OrientationHelper
 import android.support.v7.widget.RecyclerView
@@ -124,6 +127,42 @@ class BobBoardView : FrameLayout {
 
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs) {
         init()
+    }
+
+    fun onSaveInstance(): Parcelable {
+        val bundle = Bundle()
+        bundle.putParcelable("listRecyclerViewState", listRecyclerView.layoutManager.onSaveInstanceState())
+        val columnBundle = boardAdapter?.onSaveInstanceState() as Bundle
+
+        val itemCount = listRecyclerView.childCount
+        for (i in 0 until itemCount) {
+            val child = listRecyclerView.getChildAt(i)
+            val adapterPosition = listRecyclerView.getChildAdapterPosition(child)
+            val itemId = boardAdapter?.getItemId(adapterPosition)
+            val viewHolder = listRecyclerView.getChildViewHolder(child) as ListViewHolder<*>
+            columnBundle.putParcelable(itemId.toString(), viewHolder.recyclerView?.layoutManager?.onSaveInstanceState())
+        }
+
+        bundle.putBundle("columnRecyclerViewsState", columnBundle)
+
+        return bundle
+    }
+
+    fun onRestoreState(bundle: Bundle) {
+        listRecyclerView.layoutManager.onRestoreInstanceState(bundle.getParcelable("listRecyclerViewState"))
+        val bundle = bundle.getBundle("columnRecyclerViewsState")
+        boardAdapter?.onRestoreInstanceState(bundle)
+
+        val itemCount = listRecyclerView.childCount
+        for (i in 0 until itemCount) {
+            val child = listRecyclerView.getChildAt(i)
+            val adapterPosition = listRecyclerView.getChildAdapterPosition(child)
+            val itemId = boardAdapter?.getItemId(adapterPosition)
+            val viewHolder = listRecyclerView.getChildViewHolder(child) as ListViewHolder<*>
+            if (bundle.containsKey(itemId.toString())) {
+                viewHolder.recyclerView?.layoutManager?.onRestoreInstanceState(bundle.getParcelable(itemId.toString()))
+            }
+        }
     }
 
     /**

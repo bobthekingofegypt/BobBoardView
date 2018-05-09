@@ -3,6 +3,7 @@ package org.bobstuff.bobboardview
 import android.content.ClipData
 import android.content.Context
 import android.os.Build
+import android.os.Bundle
 import android.os.Parcelable
 import android.util.Log
 import android.view.View
@@ -19,7 +20,24 @@ abstract class BobBoardArrayAdapter<T : BobBoardAdapter.ListViewHolder<*>, X, V>
         BobBoardAdapter<T>() {
 
     val lists: MutableList<V> = mutableListOf()
-    private val columnScrollPositions: MutableMap<V, Parcelable> = mutableMapOf()
+    private val columnScrollPositions: MutableMap<Long, Parcelable> = mutableMapOf()
+
+    override fun onSaveInstanceState(): Parcelable? {
+        val bundle = Bundle()
+        for ((key, value) in columnScrollPositions) {
+            bundle.putParcelable(key.toString(), value)
+        }
+        return bundle
+    }
+
+    override fun onRestoreInstanceState(bundle: Bundle) {
+        for (key in bundle.keySet()) {
+            Log.d("TEST", "key ${key}")
+            columnScrollPositions[key.toLong()] = bundle.getParcelable(key)
+        }
+
+        notifyDataSetChanged()
+    }
 
     fun startDrag(holder: ListViewHolder<BobBoardListAdapter<*>>,
             dragShadowBuilder: View.DragShadowBuilder, x: Float, y: Float): Boolean {
@@ -103,10 +121,10 @@ abstract class BobBoardArrayAdapter<T : BobBoardAdapter.ListViewHolder<*>, X, V>
     }
 
     override fun onBindViewHolder(holder: T, position: Int) {
-        val model = lists[position]
-        Log.d("TEST", "rebind, columns scroll positions for model ${columnScrollPositions.containsKey(model)}")
-        if (columnScrollPositions.containsKey(model)) {
-            holder.recyclerView?.layoutManager?.onRestoreInstanceState(columnScrollPositions[model])
+        val key = getItemId(position)
+        Log.d("TEST", "rebind, columns scroll positions for model ${columnScrollPositions.containsKey(key)}")
+        if (columnScrollPositions.containsKey(key)) {
+            holder.recyclerView?.layoutManager?.onRestoreInstanceState(columnScrollPositions[key])
         }
     }
 
@@ -114,7 +132,7 @@ abstract class BobBoardArrayAdapter<T : BobBoardAdapter.ListViewHolder<*>, X, V>
         val index = holder.adapterPosition
         if (index != -1) {
             holder.recyclerView?.run {
-                columnScrollPositions[lists[index]] =
+                columnScrollPositions[getItemId(index)] =
                         layoutManager.onSaveInstanceState()
             }
         }

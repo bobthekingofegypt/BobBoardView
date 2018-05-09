@@ -1,5 +1,6 @@
 package org.bobstuff.bobboardview
 
+import android.os.Bundle
 import android.os.Parcelable
 import android.support.v7.widget.RecyclerView
 import android.util.Log
@@ -43,6 +44,14 @@ abstract class BobBoardAdapter<T : BobBoardAdapter.ListViewHolder<*>>
         }
 
     var addedListId: Long = -1
+
+    open fun onSaveInstanceState(): Parcelable? {
+        return null
+    }
+
+    open fun onRestoreInstanceState(bundle: Bundle) {
+
+    }
 
     /**
      * Override this method if you want to handle custom changes to the added view, ex. make it

@@ -124,6 +124,8 @@ class TrelloBoardAdapter(private val context: Context, dragOperation: BobBoardDr
         holder.itemView.layoutParams = lp
         child.scaleY = ratio
         child.scaleX = ratio
+
+        super.onBindViewHolder(holder, position)
     }
 
     override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int): TrelloListViewHolderBase {

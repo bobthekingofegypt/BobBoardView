@@ -8,6 +8,7 @@ import android.graphics.drawable.ColorDrawable
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
+import android.os.PersistableBundle
 import android.support.v7.widget.*
 import android.util.Log
 import android.util.TypedValue
@@ -112,6 +113,20 @@ class BoardActivity : AppCompatActivity() {
                 }
             }
             true
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBundle("boardViewState", boardView.onSaveInstance() as Bundle)
+
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
+        super.onRestoreInstanceState(savedInstanceState)
+
+        savedInstanceState?.run {
+            boardView.onRestoreState(savedInstanceState.getBundle("boardViewState"))
         }
     }
 
