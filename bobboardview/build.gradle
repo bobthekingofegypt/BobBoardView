@@ -40,3 +40,32 @@ dependencies {
 repositories {
     mavenCentral()
 }
+
+ext {
+
+    bintrayRepo = 'maven'
+    bintrayName = 'BobBoardView'
+
+    publishedGroupId = 'org.bobstuff.bobboardview'
+    libraryName = 'BobBoardView'
+    artifact = 'bobboardview' //This artifact name should be the same with library module name
+
+    libraryDescription = 'Library for making scrum like boards in android applications'
+
+    siteUrl = 'https://github.com/bobthekingofegypt/BobBoardView'
+    gitUrl = 'https://github.com/bobthekingofegypt/BobBoardView.git'
+
+    libraryVersion = '0.1.0'
+
+    developerId = 'bobthekingofegypt'
+    developerName = 'Richard Martin'
+    developerEmail = 'bobthekingofegypt@googlemail.com'
+    organization = 'bobstuff'
+    licenseName = 'The Apache Software License, Version 2.0'
+    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
+
+}
+//These two remote files contain Bintray configuration as described above.
+apply from: 'install.gradle'
+apply from: 'bintray.gradle'
