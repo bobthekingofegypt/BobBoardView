@@ -283,7 +283,7 @@ class BoardActivity : AppCompatActivity() {
             return true
         }
 
-        override fun canCardDropInList(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>): Boolean {
+        override fun canCardDropInList(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, destinationIndex: Int): Boolean {
             if (listViewHolder.itemId == 666L) {
                 return false
             }

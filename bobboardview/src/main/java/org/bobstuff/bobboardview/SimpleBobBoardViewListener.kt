@@ -49,7 +49,7 @@ abstract class SimpleBobBoardViewListener<Card, List>(private val currentDragOpe
 
     override fun onCardDragEnteredList(boardView: BobBoardView, previousListViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>?, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder?, toIndex: Int) {
         Log.d("TEST", "onCardDragEnteredList()|1")
-        if (!canCardDropInList(boardView, listViewHolder) ||
+        if (!canCardDropInList(boardView, listViewHolder, toIndex) ||
                 (!config.removeItemWhenDraggingBetweenLists && listViewHolder.adapterPosition == currentDragOperation.listIndex)) {
             return
         }
@@ -102,7 +102,8 @@ abstract class SimpleBobBoardViewListener<Card, List>(private val currentDragOpe
     abstract fun moveListInDataSource(fromListIndex: Int, toListIndex: Int)
 
     override fun onCardDragExitedList(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder) {
-        if (!canCardDropInList(boardView, listViewHolder)) {
+        //TODO shouldn't use this method to check if we are making this method dependant on position
+        if (!canCardDropInList(boardView, listViewHolder, -1)) {
             return
         }
 
@@ -126,7 +127,7 @@ abstract class SimpleBobBoardViewListener<Card, List>(private val currentDragOpe
         }
     }
 
-    override fun canCardDropInList(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>): Boolean {
+    override fun canCardDropInList(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, destinationIndex: Int): Boolean {
         return true
     }
 
@@ -158,6 +159,13 @@ abstract class SimpleBobBoardViewListener<Card, List>(private val currentDragOpe
     }
 
     override fun canListDropOver(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, otherListViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>): Boolean {
+        return true
+    }
+
+    override fun canCardDropOver(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder, otherCardViewHolder: BobBoardListAdapter.CardViewHolder): Boolean {
+        if (listViewHolder.adapterPosition == 0) {
+            return false
+        }
         return true
     }
 

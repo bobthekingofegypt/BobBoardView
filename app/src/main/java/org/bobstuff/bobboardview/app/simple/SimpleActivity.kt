@@ -106,11 +106,14 @@ class SimpleActivity : AppCompatActivity(), SimpleBoardAdapter.BobBoardViewInter
             }
         }
 
-        override fun canCardDropInList(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>): Boolean {
+        override fun canCardDropInList(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, destinationIndex: Int): Boolean {
             if (listViewHolder.itemId == 2L || listViewHolder.itemId == 666L) {
                 return false
             }
-            return super.canCardDropInList(boardView, listViewHolder)
+            if (board.boardLists[listViewHolder.adapterPosition].cards.size == destinationIndex) {
+                return false
+            }
+            return super.canCardDropInList(boardView, listViewHolder, destinationIndex)
         }
     }
 

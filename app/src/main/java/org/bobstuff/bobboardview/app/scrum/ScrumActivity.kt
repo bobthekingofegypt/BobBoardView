@@ -123,11 +123,11 @@ class ScrumActivity : AppCompatActivity() {
             listViewHolder?.itemView?.visibility = View.VISIBLE
         }
 
-        override fun canCardDropInList(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>): Boolean {
+        override fun canCardDropInList(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, destinationIndex: Int): Boolean {
             //if (listViewHolder.itemId != "List 1".hashCode().toLong()) {
            //     return false
             //}
-            return super.canCardDropInList(boardView, listViewHolder)
+            return super.canCardDropInList(boardView, listViewHolder, destinationIndex)
         }
     }
 }

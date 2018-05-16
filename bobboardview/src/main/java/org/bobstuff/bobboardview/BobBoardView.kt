@@ -423,7 +423,7 @@ class BobBoardView : FrameLayout {
         if (holder.recyclerView == null) {
             //TODO this is a bit stupid, you can't drop in a column without a recyclerview so
             // shouldn't really call this
-            boardViewListener.canCardDropInList(this, holder)
+            boardViewListener.canCardDropInList(this, holder, -1)
             boardViewListener.onCardDragEnteredList(this, currentListViewHolder, holder, null, -1)
             //currentListViewHolder?.setIsRecyclable(true)
             //currentListViewHolder = holder
@@ -456,7 +456,10 @@ class BobBoardView : FrameLayout {
             return
         }
 
-        if (activeListIndex == NO_LIST_ACTIVE) {
+        Log.d("TEST", "!!!!!!!!!! currentListVIewHolder = $currentListIndex; $currentListViewHolder")
+
+        if (activeListIndex == NO_LIST_ACTIVE || currentListIndex != activeListIndex) {
+            Log.d("TEST", "!!!!!!!!!!")
             if (debugEnabled) {
                 Log.d(TAG, "onUpdateDrag()| currentListIndex was NO_LIST_ACTIVE but we are on " +
                         "top of a list, scanning for destination index")
@@ -547,8 +550,10 @@ class BobBoardView : FrameLayout {
             val cardViewHolder: BobBoardListAdapter.CardViewHolder? = if (cardViewUnder != null) {
                 cardRecyclerView.getChildViewHolder(cardViewUnder) as BobBoardListAdapter.CardViewHolder
             } else null
-            val canCardDropInList = boardViewListener.canCardDropInList(this, holder)
-            boardViewListener.onCardDragEnteredList(this, currentListViewHolder, holder, cardViewHolder, destinationIndex)
+            val canCardDropInList = boardViewListener.canCardDropInList(this, holder, destinationIndex)
+            if (activeListIndex == NO_LIST_ACTIVE) {
+                boardViewListener.onCardDragEnteredList(this, currentListViewHolder, holder, cardViewHolder, destinationIndex)
+            }
             if (canCardDropInList) {
                 currentListViewHolder?.setIsRecyclable(true)
                 currentListViewHolder = holder
@@ -693,6 +698,9 @@ class BobBoardView : FrameLayout {
             if (currentDragType == DragType.LIST) {
                 return boardViewListener.canListDropOver(this@BobBoardView, current as ListViewHolder<BobBoardListAdapter<*>>,
                         target as ListViewHolder<BobBoardListAdapter<*>>)
+            } else if (currentDragType == DragType.CARD) {
+                return boardViewListener.canCardDropOver(this@BobBoardView,  activeListViewHolder!!, current as BobBoardListAdapter.CardViewHolder,
+                        target as BobBoardListAdapter.CardViewHolder)
             }
             return true
         }
@@ -708,8 +716,9 @@ class BobBoardView : FrameLayout {
         fun onListMove(boardView: BobBoardView, fromPosition: Int, toPosition: Int)
         fun onCardMove(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<*>, listIndex: Int, fromPosition: Int, toPosition: Int)
         fun onCardDragExitedList(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder)
-        fun canCardDropInList(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>): Boolean
+        fun canCardDropInList(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>, destinationIndex: Int): Boolean
         fun canListDropOver(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>, otherListViewHolder: ListViewHolder<BobBoardListAdapter<*>>): Boolean
+        fun canCardDropOver(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder, otherCardViewHolder: BobBoardListAdapter.CardViewHolder): Boolean
 
         fun onCardDragEnteredList(boardView: BobBoardView, previousListViewHolder: ListViewHolder<BobBoardListAdapter<*>>?, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder?, toIndex: Int)
         fun onListDragExitedBoardView(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>): Boolean
