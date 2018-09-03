@@ -1,8 +1,7 @@
 package org.bobstuff.bobboardview
 
-import android.support.v4.view.ViewCompat
-import android.support.v7.widget.RecyclerView
-import android.util.Log
+import androidx.core.view.ViewCompat
+import androidx.recyclerview.widget.RecyclerView
 import android.view.animation.Interpolator
 
 /**
@@ -130,8 +129,8 @@ class BobBoardScroller(private val recyclerView: RecyclerView,
         private const val RIGHT = 1
         const val DRAG_SCROLL_ACCELERATION_LIMIT_TIME_MS: Long = 2500
         val sDragScrollInterpolator = Interpolator { t -> t * t * t * t * t }
-        val sDragViewScrollCapInterpolator = Interpolator { t ->
-            var t = t
+        val sDragViewScrollCapInterpolator = Interpolator {
+            var t = it
             t -= 1.0f
             t * t * t * t * t + 1.0f
         }

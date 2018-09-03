@@ -2,7 +2,7 @@ package org.bobstuff.bobboardview
 
 import android.app.Activity
 import android.graphics.Rect
-import android.support.v7.widget.RecyclerView
+import androidx.appcompat.widget.RecyclerView
 import android.view.View
 import org.junit.Assert
 import org.junit.Before

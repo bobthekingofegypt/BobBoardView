@@ -8,7 +8,6 @@ import android.support.test.runner.AndroidJUnit4
 import android.support.test.uiautomator.By
 import android.support.test.uiautomator.UiDevice
 import android.support.test.uiautomator.UiObject2
-import android.util.Log
 import android.view.ViewConfiguration
 import com.facebook.testing.screenshot.Screenshot
 import org.junit.Before
@@ -21,7 +20,7 @@ import android.support.test.espresso.action.Swipe
 import android.support.test.espresso.contrib.RecyclerViewActions
 import android.support.test.espresso.matcher.ViewMatchers
 import android.support.test.uiautomator.Direction
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import org.bobstuff.bobboardview.BobBoardView
 import org.bobstuff.bobboardview.app.R
 

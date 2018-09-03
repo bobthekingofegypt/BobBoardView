@@ -51,7 +51,7 @@ abstract class BobBoardArrayAdapter<T : BobBoardAdapter.ListViewHolder<*>, X, V>
         }
 
         if (result) {
-            boardView?.startListDrag(holder as ListViewHolder<BobBoardListAdapter<*>>, x, y)
+            boardView?.startListDrag(holder, x, y)
         }
         Log.d("TEST", "RESULT $result")
         return result
@@ -133,7 +133,7 @@ abstract class BobBoardArrayAdapter<T : BobBoardAdapter.ListViewHolder<*>, X, V>
         if (index != -1) {
             holder.recyclerView?.run {
                 columnScrollPositions[getItemId(index)] =
-                        layoutManager.onSaveInstanceState()
+                        layoutManager!!.onSaveInstanceState()!!
             }
         }
 

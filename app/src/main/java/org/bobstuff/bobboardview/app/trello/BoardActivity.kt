@@ -5,11 +5,8 @@ import android.graphics.Color
 import android.graphics.PointF
 import android.graphics.Rect
 import android.graphics.drawable.ColorDrawable
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Handler
-import android.os.PersistableBundle
-import android.support.v7.widget.*
 import android.util.Log
 import android.util.TypedValue
 import android.view.DragEvent
@@ -18,13 +15,15 @@ import android.view.View
 import android.view.ViewAnimationUtils
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.widget.Toolbar
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearSnapHelper
+import androidx.recyclerview.widget.SnapHelper
 import org.bobstuff.bobboardview.*
 import org.bobstuff.bobboardview.app.R
-import org.bobstuff.bobboardview.app.scrum.ScrumColumnAdapter
 import org.bobstuff.bobboardview.app.trello.model.BoardList
 
 import org.bobstuff.bobboardview.app.trello.model.Card
-import org.bobstuff.bobboardview.app.util.DragOperation
 import org.bobstuff.bobboardview.app.util.getWindowSize
 import org.bobstuff.bobboardview.app.util.setStatusBarColor
 import org.bobstuff.bobboardview.app.util.styleToolbarContent

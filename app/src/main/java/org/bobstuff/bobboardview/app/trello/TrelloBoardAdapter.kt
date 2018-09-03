@@ -3,21 +3,13 @@ package org.bobstuff.bobboardview.app.trello
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
-import android.content.ClipData
 import android.content.Context
-import android.graphics.Rect
-import android.os.Parcelable
-import android.renderscript.Sampler
-import android.support.v7.widget.CardView
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.OrientationHelper
-import android.support.v7.widget.RecyclerView
-import android.util.Log
-import android.util.TypedValue
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.OrientationHelper
+import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
-import android.view.View.DRAG_FLAG_OPAQUE
 import android.view.ViewGroup
 import android.view.animation.AccelerateInterpolator
 import android.widget.TextView
@@ -25,13 +17,10 @@ import org.bobstuff.bobboardview.*
 
 import org.bobstuff.bobboardview.BobBoardListAdapter.DefaultCardEventCallbacks
 import org.bobstuff.bobboardview.app.R
-import org.bobstuff.bobboardview.app.scrum.ScrumBoardAdapter
-import org.bobstuff.bobboardview.app.trello.model.Board
 import org.bobstuff.bobboardview.app.trello.model.BoardList
 import org.bobstuff.bobboardview.app.trello.model.Card
 import org.bobstuff.bobboardview.app.util.SimpleShadowBuilder
 
-import java.util.Collections
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
@@ -346,9 +335,9 @@ class TrelloBoardAdapter(private val context: Context, dragOperation: BobBoardDr
                         this@TrelloBoardAdapter, this))
 
         init {
-            recyclerView.layoutManager = LinearLayoutManager(recyclerView.context, LinearLayoutManager.VERTICAL, false)
+            recyclerView.layoutManager = LinearLayoutManager(recyclerView.context, RecyclerView.VERTICAL, false)
             recyclerView.adapter = listAdapter
-            recyclerView.recycledViewPool = viewPool
+            recyclerView.setRecycledViewPool(viewPool)
         }
     }
 

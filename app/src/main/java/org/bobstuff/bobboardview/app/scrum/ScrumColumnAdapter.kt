@@ -4,7 +4,7 @@ import android.content.ClipData
 import android.content.Context
 import android.graphics.Color
 import android.os.Build
-import android.support.v4.content.ContextCompat
+import androidx.core.content.ContextCompat
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -14,12 +14,8 @@ import android.widget.TextView
 import org.bobstuff.bobboardview.app.R
 import android.util.TypedValue
 import android.view.MotionEvent
-import java.util.*
 import android.widget.Toast
 import org.bobstuff.bobboardview.*
-import org.bobstuff.bobboardview.app.simple.BoardList
-import org.bobstuff.bobboardview.app.simple.Card
-import org.bobstuff.bobboardview.app.simple.SimpleListAdapter
 import org.bobstuff.bobboardview.app.util.SimpleShadowBuilder
 
 

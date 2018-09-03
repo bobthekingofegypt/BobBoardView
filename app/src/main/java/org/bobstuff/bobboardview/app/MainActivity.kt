@@ -3,12 +3,12 @@ package org.bobstuff.bobboardview.app
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.support.v7.widget.DividerItemDecoration
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.Toolbar
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.appcompat.widget.Toolbar
 import android.widget.TextView
 import android.view.ViewGroup
 import android.view.LayoutInflater
@@ -29,8 +29,8 @@ class MainActivity : AppCompatActivity() {
         toolbar.title = "BobBoardView Samples"
 
         val recyclerView = findViewById<RecyclerView>(R.id.options_recycler)
-        recyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-        recyclerView.addItemDecoration(DividerItemDecoration(recyclerView.context, LinearLayoutManager.VERTICAL))
+        recyclerView.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
+        recyclerView.addItemDecoration(DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL))
 
         val data = listOf("Trello style", "Scrum board view", "Large dataset, reuse", "Simple example")
         val adapter = MyRecyclerViewAdapter(this, data)

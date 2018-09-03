@@ -7,7 +7,7 @@
     android:paddingBottom="10dp"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <android.support.v7.widget.CardView
+    <androidx.cardview.widget.CardView
         android:id="@+id/cardview"
         android:layout_width="@dimen/trello_item_list_width"
         android:layout_height="wrap_content"
@@ -34,7 +34,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="1px"
                 android:background="#9c9fa0" />
-            <android.support.v7.widget.RecyclerView
+            <androidx.recyclerview.widget.RecyclerView
                 android:layout_weight="1.0"
                 android:clipToPadding="false"
                 android:animateLayoutChanges="false"
@@ -61,5 +61,5 @@
                 android:textColor="#70b500"
                 />
         </LinearLayout>
-    </android.support.v7.widget.CardView>
+    </androidx.cardview.widget.CardView>
 </LinearLayout>

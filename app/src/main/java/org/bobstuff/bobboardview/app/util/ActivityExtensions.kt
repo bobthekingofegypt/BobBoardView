@@ -1,16 +1,14 @@
 package org.bobstuff.bobboardview.app.util
 
-import android.app.Activity
-import android.graphics.Color
 import android.graphics.Point
 import android.graphics.PorterDuff
 import android.os.Build
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.Toolbar
 import android.view.View
 import android.view.WindowManager
-import org.bobstuff.bobboardview.R
+import androidx.core.content.ContextCompat
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import org.bobstuff.bobboardview.app.R
 
 /**
  * Created by bob
@@ -43,7 +41,7 @@ fun AppCompatActivity.styleToolbarContent(toolbar: Toolbar, color: Int) {
     supportActionBar?.setDisplayHomeAsUpEnabled(true)
     supportActionBar?.setDisplayShowHomeEnabled(true)
     val upArrow = ContextCompat.getDrawable(this, R.drawable.abc_ic_ab_back_material)
-    upArrow.setColorFilter(color, PorterDuff.Mode.SRC_ATOP)
+    upArrow?.setColorFilter(color, PorterDuff.Mode.SRC_ATOP)
     supportActionBar?.setHomeAsUpIndicator(upArrow)
     toolbar.setTitleTextColor(color)
 }

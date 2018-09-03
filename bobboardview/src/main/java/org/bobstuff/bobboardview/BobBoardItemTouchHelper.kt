@@ -1,9 +1,9 @@
 package org.bobstuff.bobboardview
 
 import android.graphics.Rect
-import android.support.v4.view.ViewCompat
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.helper.ItemTouchHelper
+import androidx.core.view.ViewCompat
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.ItemTouchHelper
 import android.util.Log
 import android.view.HapticFeedbackConstants
 import android.view.View
@@ -65,7 +65,7 @@ class BobBoardItemTouchHelper(private val maxScrollSpeed: Int,
                     moveIfNecessary(selected!!)
                 }
                 recyclerView?.removeCallbacks(this)
-                ViewCompat.postOnAnimation(recyclerView, this)
+                ViewCompat.postOnAnimation(recyclerView as View, this)
             }
         }
     }
@@ -183,8 +183,6 @@ class BobBoardItemTouchHelper(private val maxScrollSpeed: Int,
             distances.clear()
             return
         }
-        val toPosition = target.adapterPosition
-        val fromPosition = viewHolder.adapterPosition
         if (callback.onMove(recyclerView, viewHolder, target)) {
             val layoutManager = recyclerView.layoutManager
             val targetPos = target.adapterPosition
@@ -219,9 +217,9 @@ class BobBoardItemTouchHelper(private val maxScrollSpeed: Int,
         val centerX = (left + right) / 2
         val centerY = (top + bottom) / 2
         val lm = recyclerView.layoutManager
-        val childCount = lm.childCount
+        val childCount = lm?.childCount!!
         for (i in 0 until childCount) {
-            val other = lm.getChildAt(i)
+            val other = lm.getChildAt(i)!!
             if (other === viewHolder.itemView) {
                 continue
             }
@@ -334,9 +332,9 @@ class BobBoardItemTouchHelper(private val maxScrollSpeed: Int,
         val height = recyclerView.height
         val scrollZone = 200
         if (debugEnabled) {
-            Log.d(TAG, "scrollIfNecessary() | lm.canScrollHorizontally: ${lm.canScrollHorizontally()}; lm.canScrollVertically: ${lm.canScrollVertically()}; recyclerView width: $width; recyclerView height: $height")
+            Log.d(TAG, "scrollIfNecessary() | lm.canScrollHorizontally: ${lm?.canScrollHorizontally()}; lm.canScrollVertically: ${lm?.canScrollVertically()}; recyclerView width: $width; recyclerView height: $height")
         }
-        if (lm.canScrollHorizontally()) {
+        if (lm?.canScrollHorizontally()!!) {
             scrollX = when {
                 dragX < scrollZone ->
                     -interpolateOutOfBoundsScroll(scrollZone, dragX.toInt(), scrollDuration)

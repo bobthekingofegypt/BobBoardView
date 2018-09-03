@@ -2,7 +2,7 @@ package org.bobstuff.bobboardview
 
 import android.os.Bundle
 import android.os.Parcelable
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.util.Log
 import android.view.View
 

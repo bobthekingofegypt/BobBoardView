@@ -1,11 +1,8 @@
 package org.bobstuff.bobboardview.app.scrum
 
-import android.content.ClipData
 import android.content.Context
-import android.os.Build
-import android.os.Parcelable
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -16,7 +13,6 @@ import android.widget.TextView
 import org.bobstuff.bobboardview.*
 import org.bobstuff.bobboardview.app.R
 import org.bobstuff.bobboardview.app.util.SimpleShadowBuilder
-import java.util.*
 
 /**
  * Created by bob on 21/02/18.
@@ -73,8 +69,8 @@ class ScrumBoardAdapter(val context: Context, val width: Int, dragOperation: Bob
             columnRecyclerView.adapter = columnAdapter
             val dividerSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10f, context.resources.displayMetrics)
             columnRecyclerView.addItemDecoration(BobBoardSimpleDividers(dividerSizeInPixels.toInt(), BobBoardSimpleDividersOrientation.VERTICAL))
-            columnRecyclerView.layoutManager = LinearLayoutManager(context, LinearLayout.VERTICAL, false)
-            columnRecyclerView.recycledViewPool = viewPool
+            columnRecyclerView.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
+            columnRecyclerView.setRecycledViewPool(viewPool)
         }
 
         override val listAdapter: ScrumColumnAdapter

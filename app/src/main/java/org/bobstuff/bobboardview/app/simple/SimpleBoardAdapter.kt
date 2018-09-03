@@ -1,10 +1,8 @@
 package org.bobstuff.bobboardview.app.simple
 
-import android.content.ClipData
 import android.content.Context
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.util.Log
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -110,9 +108,9 @@ class SimpleBoardAdapter(val context: Context, dragOperation: BobBoardDragOperat
             val dividerSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10f, context.resources.displayMetrics)
             listRecyclerView.addItemDecoration(BobBoardSimpleDividers(dividerSizeInPixels.toInt(),
                     BobBoardSimpleDividersOrientation.VERTICAL))
-            listRecyclerView.layoutManager = LinearLayoutManager(context, LinearLayout.VERTICAL,
+            listRecyclerView.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL,
                     false)
-            listRecyclerView.recycledViewPool = viewPool
+            listRecyclerView.setRecycledViewPool(viewPool)
         }
 
         override val listAdapter: SimpleListAdapter

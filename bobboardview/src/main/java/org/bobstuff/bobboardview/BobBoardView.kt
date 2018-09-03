@@ -4,11 +4,10 @@ import android.content.Context
 import android.graphics.PointF
 import android.graphics.Rect
 import android.os.Bundle
-import android.os.Parcel
 import android.os.Parcelable
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.OrientationHelper
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.OrientationHelper
+import androidx.recyclerview.widget.RecyclerView
 import android.util.AttributeSet
 import android.util.Log
 import android.view.DragEvent
@@ -131,7 +130,7 @@ class BobBoardView : FrameLayout {
 
     fun onSaveInstance(): Parcelable {
         val bundle = Bundle()
-        bundle.putParcelable("listRecyclerViewState", listRecyclerView.layoutManager.onSaveInstanceState())
+        bundle.putParcelable("listRecyclerViewState", listRecyclerView.layoutManager!!.onSaveInstanceState())
         val columnBundle = boardAdapter?.onSaveInstanceState() as Bundle
 
         val itemCount = listRecyclerView.childCount
@@ -149,9 +148,9 @@ class BobBoardView : FrameLayout {
     }
 
     fun onRestoreState(bundle: Bundle) {
-        listRecyclerView.layoutManager.onRestoreInstanceState(bundle.getParcelable("listRecyclerViewState"))
-        val bundle = bundle.getBundle("columnRecyclerViewsState")
-        boardAdapter?.onRestoreInstanceState(bundle)
+        listRecyclerView.layoutManager!!.onRestoreInstanceState(bundle.getParcelable("listRecyclerViewState"))
+        val bobBoardBundle = bundle.getBundle("columnRecyclerViewsState")
+        boardAdapter?.onRestoreInstanceState(bobBoardBundle)
 
         val itemCount = listRecyclerView.childCount
         for (i in 0 until itemCount) {
@@ -159,8 +158,8 @@ class BobBoardView : FrameLayout {
             val adapterPosition = listRecyclerView.getChildAdapterPosition(child)
             val itemId = boardAdapter?.getItemId(adapterPosition)
             val viewHolder = listRecyclerView.getChildViewHolder(child) as ListViewHolder<*>
-            if (bundle.containsKey(itemId.toString())) {
-                viewHolder.recyclerView?.layoutManager?.onRestoreInstanceState(bundle.getParcelable(itemId.toString()))
+            if (bobBoardBundle.containsKey(itemId.toString())) {
+                viewHolder.recyclerView?.layoutManager?.onRestoreInstanceState(bobBoardBundle.getParcelable(itemId.toString()))
             }
         }
     }
@@ -303,7 +302,7 @@ class BobBoardView : FrameLayout {
             for (i in 0 until itemCount) {
                 val child = listRecyclerView.getChildAt(i)
 
-                lm.calculateItemDecorationsForChild(child, tempRect)
+                lm!!.calculateItemDecorationsForChild(child, tempRect)
                 val vlp = child.layoutParams as MarginLayoutParams
                 val top = child.top - tempRect.top - vlp.topMargin
                 val bottom = child.top + child.height + tempRect.bottom + vlp.bottomMargin
@@ -464,8 +463,10 @@ class BobBoardView : FrameLayout {
             var cardViewUnder = cardRecyclerView.findChildViewUnder(x - cardRecyclerViewDrawingRectParent.left,
                     y - cardRecyclerViewDrawingRectParent.top)
 
-            var destinationIndex = cardRecyclerView.getChildAdapterPosition(cardViewUnder)
-            val itemCount = cardRecyclerView.adapter.itemCount
+            var destinationIndex = cardViewUnder?.let {
+                cardRecyclerView.getChildAdapterPosition(it)
+            } ?: -1
+            val itemCount = cardRecyclerView.adapter!!.itemCount
             val lm = cardRecyclerView.layoutManager
 
             if (destinationIndex == -1) {
@@ -486,7 +487,7 @@ class BobBoardView : FrameLayout {
                     // point
                     for (i in 0 until childCount) {
                         val child = cardRecyclerView.getChildAt(i)
-                        recyclerChildAdjustBounds(child, lm, tempRect)
+                        recyclerChildAdjustBounds(child, lm!!, tempRect)
 
                         val contains = tempRect.contains((x - cardRecyclerViewDrawingRectParent.left).toInt(),
                                 (y - cardRecyclerViewDrawingRectParent.top).toInt())
@@ -532,12 +533,12 @@ class BobBoardView : FrameLayout {
 
                     if (destinationIndex < 0) {
                         //TODO in theory this should be impossible now we adjust for margins on cards
-                        destinationIndex = cardRecyclerView.adapter.itemCount
+                        destinationIndex = cardRecyclerView!!.adapter!!.itemCount
                     }
                 }
             } else if (destinationIndex == itemCount - 1) {
                 //destination index is the last item so we may be coming in from the bottom
-                recyclerChildAdjustBounds(cardViewUnder, lm, tempRect)
+                recyclerChildAdjustBounds(cardViewUnder!!, lm!!, tempRect)
                 if ((y.toInt() - cardRecyclerViewDrawingRectParent.top - tempRect.top) >
                         ((tempRect.bottom - tempRect.top) / 2)) {
                     destinationIndex += 1
@@ -677,7 +678,7 @@ class BobBoardView : FrameLayout {
             var offsetTop = 0;
             if(firstPos >= 0) {
                 val firstView = manager.findViewByPosition(firstPos)
-                offsetTop = manager.getDecoratedTop(firstView) - manager.getTopDecorationHeight(firstView)
+                offsetTop = manager.getDecoratedTop(firstView!!) - manager.getTopDecorationHeight(firstView)
             }
 
             onItemMove(source.adapterPosition, target.adapterPosition)
