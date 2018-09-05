@@ -1,28 +1,25 @@
 package org.bobstuff.bobboardview.app.trello
 
 import android.graphics.Point
-import android.support.test.InstrumentationRegistry
-import android.support.test.espresso.Espresso
-import android.support.test.rule.ActivityTestRule
-import android.support.test.runner.AndroidJUnit4
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.UiDevice
-import android.support.test.uiautomator.UiObject2
 import android.view.ViewConfiguration
+import androidx.recyclerview.widget.RecyclerView
+import androidx.test.InstrumentationRegistry
+import androidx.test.espresso.Espresso
+import androidx.test.espresso.contrib.RecyclerViewActions
+import androidx.test.espresso.matcher.ViewMatchers
+import androidx.test.rule.ActivityTestRule
+import androidx.test.runner.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
 import com.facebook.testing.screenshot.Screenshot
+import org.bobstuff.bobboardview.BobBoardView
+import org.bobstuff.bobboardview.app.R
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.TimeUnit
-import android.support.test.espresso.Espresso.onView
-import android.support.test.espresso.action.Swipe
-import android.support.test.espresso.contrib.RecyclerViewActions
-import android.support.test.espresso.matcher.ViewMatchers
-import android.support.test.uiautomator.Direction
-import androidx.recyclerview.widget.RecyclerView
-import org.bobstuff.bobboardview.BobBoardView
-import org.bobstuff.bobboardview.app.R
 
 
 /**
@@ -189,8 +186,8 @@ class BoardActivityInstrumentedTest {
     fun ensureDragSecondBottomOptionOverBottomDoesntCrash() {
         val boardView: BobBoardView = activityRule.activity.findViewById(R.id.board_view)
         val vh = boardView.listRecyclerView.findViewHolderForAdapterPosition(0)
-        val recyclerView = vh.itemView.findViewById<RecyclerView>(R.id.card_recycler)
-        val itemCount = recyclerView.adapter.itemCount
+        val recyclerView = vh!!.itemView.findViewById<RecyclerView>(R.id.card_recycler)
+        val itemCount = recyclerView.adapter!!.itemCount
 
         Espresso.onView(ViewMatchers.withContentDescription("todo cards"))
                 .perform(RecyclerViewActions.scrollToPosition<RecyclerView.ViewHolder>(itemCount - 1))
@@ -265,8 +262,8 @@ class BoardActivityInstrumentedTest {
     fun ensureDragSecondBottomOptionOutRoundAndInBottomSetsAsLast() {
         val boardView: BobBoardView = activityRule.activity.findViewById(R.id.board_view)
         val vh = boardView.listRecyclerView.findViewHolderForAdapterPosition(0)
-        val recyclerView = vh.itemView.findViewById<RecyclerView>(R.id.card_recycler)
-        val itemCount = recyclerView.adapter.itemCount
+        val recyclerView = vh!!.itemView.findViewById<RecyclerView>(R.id.card_recycler)
+        val itemCount = recyclerView.adapter!!.itemCount
 
         Espresso.onView(ViewMatchers.withContentDescription("todo cards"))
                 .perform(RecyclerViewActions.scrollToPosition<RecyclerView.ViewHolder>(itemCount - 1))
@@ -602,8 +599,8 @@ class BoardActivityInstrumentedTest {
     fun ensureScrollPositionMaintainedDuringReuse() {
         val boardView: BobBoardView = activityRule.activity.findViewById(R.id.board_view)
         val vh = boardView.listRecyclerView.findViewHolderForAdapterPosition(0)
-        val recyclerView = vh.itemView.findViewById<RecyclerView>(R.id.card_recycler)
-        val itemCount = recyclerView.adapter.itemCount
+        val recyclerView = vh!!.itemView.findViewById<RecyclerView>(R.id.card_recycler)
+        val itemCount = recyclerView.adapter!!.itemCount
 
         Espresso.onView(ViewMatchers.withContentDescription("todo cards"))
                 .perform(RecyclerViewActions.scrollToPosition<RecyclerView.ViewHolder>(itemCount - 1))

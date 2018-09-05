@@ -283,7 +283,7 @@ class BobBoardView : FrameLayout {
         // removed here means that the adapter deleted the original list when it left the confines
         // of the board view, if the users adapter did that we need to stop listening and let it
         // recycle
-        val removed = boardViewListener.onListDragExitedBoardView(this, currentListViewHolder!!)
+        val removed = boardViewListener.onListDragExitedBoardView(this, currentListViewHolder)
         if (removed) {
             currentListViewHolder?.setIsRecyclable(true)
             currentListViewHolder = null
@@ -713,7 +713,7 @@ class BobBoardView : FrameLayout {
         fun canListDropOver(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>, otherListViewHolder: ListViewHolder<BobBoardListAdapter<*>>): Boolean
 
         fun onCardDragEnteredList(boardView: BobBoardView, previousListViewHolder: ListViewHolder<BobBoardListAdapter<*>>?, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder?, toIndex: Int)
-        fun onListDragExitedBoardView(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>): Boolean
+        fun onListDragExitedBoardView(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>?): Boolean
         fun onListDragEnteredBoardView(boardView: BobBoardView, listViewHolder: ListViewHolder<BobBoardListAdapter<*>>?, overIndex: Int): Boolean
     }
 

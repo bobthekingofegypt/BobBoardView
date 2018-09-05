@@ -271,7 +271,7 @@ class BoardActivity : AppCompatActivity() {
             return false
         }
 
-        override fun onListDragExitedBoardView(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>): Boolean {
+        override fun onListDragExitedBoardView(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>?): Boolean {
             return false
         }
 
@@ -312,13 +312,13 @@ class BoardActivity : AppCompatActivity() {
         archiveView.getDrawingRect(offsetViewBounds)
         toolbar.offsetDescendantRectToMyCoords(archiveView, offsetViewBounds)
         val destinationIndex = boardView.listAdapterPositionAtPoint(x + offsetViewBounds.left, 0f)
-        if (destinationIndex == -1) {
+        if (destinationIndex < 0) {
             boardView.listRecyclerView.postOnAnimation {
                 insertDragListItem(x, y)
             }
             return
         }
-        val index = if (destinationIndex == -1) { currentDragOperation.listIndex } else destinationIndex
+        val index = if (destinationIndex < 0) { currentDragOperation.listIndex } else destinationIndex
 
         trelloBoardAdapter.insertItem(index, currentDragOperation.listItem!!, true)
         board.lists.add(index, currentDragOperation.listItem!!)

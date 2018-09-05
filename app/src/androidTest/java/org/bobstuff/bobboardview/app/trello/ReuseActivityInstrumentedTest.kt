@@ -1,19 +1,20 @@
 package org.bobstuff.bobboardview.app.trello
 
 import android.graphics.Point
-import android.support.test.InstrumentationRegistry
-import android.support.test.espresso.Espresso
-import android.support.test.espresso.contrib.RecyclerViewActions
-import android.support.test.espresso.matcher.ViewMatchers
-import android.support.test.rule.ActivityTestRule
-import android.support.test.runner.AndroidJUnit4
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.UiDevice
-import android.support.test.uiautomator.UiObject2
 import androidx.recyclerview.widget.RecyclerView
 import android.util.Log
+import androidx.test.InstrumentationRegistry
+import androidx.test.espresso.Espresso
+import androidx.test.espresso.contrib.RecyclerViewActions
+import androidx.test.espresso.matcher.ViewMatchers
+import androidx.test.rule.ActivityTestRule
+import androidx.test.runner.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
 import org.bobstuff.bobboardview.BobBoardView
 import org.bobstuff.bobboardview.app.R
+import org.bobstuff.bobboardview.app.scrum.ScrumActivity
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -27,7 +28,7 @@ import java.util.concurrent.TimeUnit
 class ReuseActivityInstrumentedTest {
     @JvmField
     @Rule
-    var activityRule = ActivityTestRule(ReuseSampleActivity::class.java)
+    var activityRule = ActivityTestRule(ScrumActivity::class.java)
     lateinit var device: UiDevice
     lateinit var boardView: UiObject2
     lateinit var toolbarView: UiObject2
@@ -44,9 +45,9 @@ class ReuseActivityInstrumentedTest {
     @Test
     fun ensureScrollPositionMaintainedDuringReuse() {
         val boardView: BobBoardView = activityRule.activity.findViewById(R.id.board_view)
-        val vh = boardView.listRecyclerView.findViewHolderForAdapterPosition(0)
+        val vh = boardView.listRecyclerView.findViewHolderForAdapterPosition(0)!!
         val recyclerView = vh.itemView.findViewById<RecyclerView>(R.id.user_story_recycler)
-        val itemCount = recyclerView.adapter.itemCount
+        val itemCount = recyclerView.adapter!!.itemCount
 
         Log.d("Item count is ", itemCount.toString())
 

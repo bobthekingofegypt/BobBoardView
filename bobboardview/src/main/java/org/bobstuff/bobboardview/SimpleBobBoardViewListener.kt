@@ -157,7 +157,7 @@ abstract class SimpleBobBoardViewListener<Card, List>(private val currentDragOpe
         return true
     }
 
-    override fun onListDragExitedBoardView(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>): Boolean {
+    override fun onListDragExitedBoardView(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>?): Boolean {
         if (config.removeListWhenDraggingOutsideBoardView) {
             boardView.listRemovedDuringDrag()
             removeListFromDataSource(currentDragOperation.listIndex)

@@ -3,8 +3,7 @@ package org.bobstuff.bobboardview.app.trello
 import com.facebook.testing.screenshot.ScreenshotRunner
 import android.os.Bundle
 import com.facebook.testing.screenshot.ScreenshotRunner.onCreate
-import android.support.test.runner.AndroidJUnitRunner
-
+import androidx.test.runner.AndroidJUnitRunner
 
 
 /**

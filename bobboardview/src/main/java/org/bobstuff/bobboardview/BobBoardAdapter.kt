@@ -9,7 +9,7 @@ import android.view.View
 /**
  * Abstract superclass to be extended by your custom adapters.  This doesn't provide much functionality
  * other than enforcing a couple of conventions and using generics to try make the use of casting a little
- * easier.  Not fully sure what bounderies should exist between framework and user yet so this is
+ * easier.  Not fully sure what boundaries should exist between framework and user yet so this is
  * a starting point.
  *
  * Created by bob
@@ -19,11 +19,11 @@ abstract class BobBoardAdapter<T : BobBoardAdapter.ListViewHolder<*>>
         @field:Transient private val debugLoggingEnabled: Boolean = true
 ) : RecyclerView.Adapter<T>() {
     init {
-        setHasStableIds(true)
+        this.setHasStableIds(true)
     }
     /**
      * Access to boardview if this adapter has been attached to a boardview, can be null when not
-     * currently attatched to any boardview
+     * currently attached to any boardview
      */
     var boardView: BobBoardView? = null
 
@@ -59,10 +59,11 @@ abstract class BobBoardAdapter<T : BobBoardAdapter.ListViewHolder<*>>
      */
     override fun onViewAttachedToWindow(viewHolder: T) {
         if (debugLoggingEnabled) {
-            Log.d(BobBoardAdapter.TAG, "onViewAttachedToWindow() | mAddedDuringDrag: " + mAddedDuringDrag
+            Log.d(BobBoardAdapter.TAG, "onViewAttachedToWindow() | mAddedDuringDrag: "
+                    + mAddedDuringDrag
                     + "; adapter position: " + viewHolder.adapterPosition)
+            Log.d(BobBoardAdapter.TAG, "addedlistid: $addedListId, viewholder itemid: ${viewHolder.itemId}")
         }
-        Log.d("TEST", "addedlistid: $addedListId, viewholder itemid: ${viewHolder.itemId}")
         if (mAddedDuringDrag && addedListId == viewHolder.itemId) {
             mAddedDuringDrag = false
             addedListId = -1
