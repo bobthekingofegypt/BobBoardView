@@ -59,7 +59,7 @@ ext {
     siteUrl = 'https://github.com/bobthekingofegypt/BobBoardView'
     gitUrl = 'https://github.com/bobthekingofegypt/BobBoardView.git'
 
-    libraryVersion = '0.1.0'
+    libraryVersion = '0.2.0'
 
     developerId = 'bobthekingofegypt'
     developerName = 'Richard Martin'
