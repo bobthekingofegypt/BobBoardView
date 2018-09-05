@@ -49,9 +49,7 @@ class ReuseActivityInstrumentedTest {
         val recyclerView = vh.itemView.findViewById<RecyclerView>(R.id.user_story_recycler)
         val itemCount = recyclerView.adapter!!.itemCount
 
-        Log.d("Item count is ", itemCount.toString())
-
-        Espresso.onView(ViewMatchers.withContentDescription("List 1 cards"))
+        Espresso.onView(ViewMatchers.withContentDescription("List 2 cards"))
                 .perform(RecyclerViewActions.scrollToPosition<RecyclerView.ViewHolder>(itemCount - 1))
 
         Espresso.onView(ViewMatchers.withContentDescription("column recycler"))

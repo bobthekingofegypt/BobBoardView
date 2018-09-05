@@ -31,8 +31,6 @@ abstract class SimpleBobBoardViewListener<Card, List>(private val currentDragOpe
     }
 
     override fun onCardMove(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<*>, listIndex: Int, fromPosition: Int, toPosition: Int) {
-        Log.d("TEST", "from $fromPosition to: $toPosition listIndex: $listIndex")
-        Log.d("TEST", "listViewHolder ${listViewHolder.adapterPosition}")
         listViewHolder?.let {
             val listArrayAdapter = it.listAdapter as BobBoardListArrayAdapter<*, *, *>
             listArrayAdapter.swapItems(fromPosition, toPosition)
@@ -44,12 +42,10 @@ abstract class SimpleBobBoardViewListener<Card, List>(private val currentDragOpe
     }
 
     override fun onCardDragEnteredList(boardView: BobBoardView, previousListViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>?, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>, cardViewHolder: BobBoardListAdapter.CardViewHolder?, toIndex: Int) {
-        Log.d("TEST", "onCardDragEnteredList()|1")
         if (!canCardDropInList(boardView, listViewHolder) ||
                 (!config.removeItemWhenDraggingBetweenLists && listViewHolder.adapterPosition == currentDragOperation.listIndex)) {
             return
         }
-        Log.d("TEST", "onCardDragEnteredList()|2")
 
         if (config.removeItemWhenDraggingBetweenLists) {
             listViewHolder?.let {

@@ -42,14 +42,12 @@ abstract class BobBoardListArrayAdapter<T : BobBoardListAdapter.CardViewHolder, 
     }
 
     open fun swapItems(fromPosition: Int, toPosition: Int) {
-        Log.d("TEST", "jumping: ${Math.abs(fromPosition-toPosition)}, swapping fromPosition: $fromPosition, toPosition: $toPosition, cards: $cards")
         if (Math.abs(fromPosition - toPosition) > 1) {
             val min = Math.min(fromPosition, toPosition)
             val max = Math.max(fromPosition, toPosition)
             val gap = toPosition - fromPosition
             Collections.rotate(cards.subList(min, max+1), toPosition - fromPosition)
             for (i in min..max) {
-                Log.d("TEST", "$i")
                 var end = i
                 for (j in 1..Math.abs(gap)) {
                     val step = if (gap < 0) { -1 } else 1
@@ -63,7 +61,6 @@ abstract class BobBoardListArrayAdapter<T : BobBoardListAdapter.CardViewHolder, 
                         }
                     }
                 }
-                Log.d("TEST", "end $end")
                 notifyItemMoved(i, end)
             }
         } else {

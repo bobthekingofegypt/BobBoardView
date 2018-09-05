@@ -391,10 +391,8 @@ class BobBoardItemTouchHelper(private val maxScrollSpeed: Int,
     }
 
     override fun onChildViewDetachedFromWindow(view: View) {
-        Log.d("TEST", "Child detatched from window")
         val holder = recyclerView?.getChildViewHolder(view) ?: return
         if (selected != null && holder === selected) {
-            Log.d("TEST", "idling because tracked child was detached")
             select(null, ACTION_STATE_IDLE)
         }
     }

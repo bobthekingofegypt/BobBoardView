@@ -32,7 +32,6 @@ abstract class BobBoardArrayAdapter<T : BobBoardAdapter.ListViewHolder<*>, X, V>
 
     override fun onRestoreInstanceState(bundle: Bundle) {
         for (key in bundle.keySet()) {
-            Log.d("TEST", "key ${key}")
             columnScrollPositions[key.toLong()] = bundle.getParcelable(key)
         }
 
@@ -53,7 +52,6 @@ abstract class BobBoardArrayAdapter<T : BobBoardAdapter.ListViewHolder<*>, X, V>
         if (result) {
             boardView?.startListDrag(holder, x, y)
         }
-        Log.d("TEST", "RESULT $result")
         return result
     }
 
@@ -76,7 +74,6 @@ abstract class BobBoardArrayAdapter<T : BobBoardAdapter.ListViewHolder<*>, X, V>
             val max = Math.max(fromPosition, toPosition)
             Collections.rotate(lists.subList(min, max+1), gap)
             for (i in min..max) {
-                Log.d("TEST", "$i")
                 var end = i
                 for (j in 1..Math.abs(gap)) {
                     val step = if (gap < 0) { -1 } else 1
@@ -90,7 +87,6 @@ abstract class BobBoardArrayAdapter<T : BobBoardAdapter.ListViewHolder<*>, X, V>
                         }
                     }
                 }
-                Log.d("TEST", "end $end")
                 notifyItemMoved(i, end)
             }
         } else {
@@ -122,7 +118,6 @@ abstract class BobBoardArrayAdapter<T : BobBoardAdapter.ListViewHolder<*>, X, V>
 
     override fun onBindViewHolder(holder: T, position: Int) {
         val key = getItemId(position)
-        Log.d("TEST", "rebind, columns scroll positions for model ${columnScrollPositions.containsKey(key)}")
         if (columnScrollPositions.containsKey(key)) {
             holder.recyclerView?.layoutManager?.onRestoreInstanceState(columnScrollPositions[key])
         }

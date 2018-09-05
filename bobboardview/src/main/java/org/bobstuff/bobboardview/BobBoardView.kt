@@ -238,7 +238,6 @@ class BobBoardView : FrameLayout {
                 }
                 DragEvent.ACTION_DROP -> return@OnDragListener true
                 DragEvent.ACTION_DRAG_ENDED -> {
-                    Log.d("TEST", "!!!!!!!!!!!! called drag ended")
                     initialEntryEventProcessed = false
                     stopDrag()
                     isDragging = false
@@ -503,12 +502,10 @@ class BobBoardView : FrameLayout {
                             if (destinationIndex < 0 && i<childCount) {
                                 val backupChild = cardRecyclerView.getChildAt(i+1)
                                 destinationIndex = cardRecyclerView.getChildAdapterPosition(backupChild) - 1
-                                Log.d(TAG, "onUpdateDrag()|destination index adjusted after forward one item - $destinationIndex")
                             }
                             if (destinationIndex < 0 && i != 0) {
                                 val backupChild = cardRecyclerView.getChildAt(i-1)
                                 destinationIndex = cardRecyclerView.getChildAdapterPosition(backupChild) + 1
-                                Log.d(TAG, "onUpdateDrag()|destination index adjusted after backtracking one item - $destinationIndex")
                             }
                             //this is a special case, if we come in from the very bottom unlike normal
                             //we don't want to insert the card inplace of the previous one we want to
@@ -528,8 +525,6 @@ class BobBoardView : FrameLayout {
                             break
                         }
                     }
-
-                    Log.d(TAG, "destination index is ${destinationIndex}")
 
                     if (destinationIndex < 0) {
                         //TODO in theory this should be impossible now we adjust for margins on cards

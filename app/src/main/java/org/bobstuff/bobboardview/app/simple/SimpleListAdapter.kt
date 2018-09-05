@@ -44,10 +44,6 @@ class SimpleListAdapter(val context: Context, dragOperation: BobBoardDragOperati
 
 
     override fun onViewAttachedToWindow(viewHolder: SimpleCardViewHolder) {
-        Log.d("TEST", "dragoperation card index: ${dragOperation.cardIndex}, " +
-                "adapter position ${viewHolder.adapterPosition} " +
-                "item id ${viewHolder.itemId} " +
-                "columnContainingdrattargetredisplaying ${columnContainingDragTargetRedisplaying}")
         if (columnContainingDragTargetRedisplaying && viewHolder.adapterPosition == dragOperation.cardIndex) {
             viewHolder.overlay.visibility = View.VISIBLE
             cardEventCallbacks.cardMovedDuringDrag(viewHolder, false)

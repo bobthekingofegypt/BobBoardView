@@ -234,7 +234,6 @@ class BoardActivity : AppCompatActivity() {
         }
 
         override fun onListDragEnded(boardView: BobBoardView, listViewHolder: BobBoardAdapter.ListViewHolder<BobBoardListAdapter<*>>?) {
-            Log.d("TEST", "DID THIS THINGY GET CALLED")
             if (dragOperationInsideArchiveView && currentDragOperation.orphaned) {
                 currentDragOperation.orphaned = false
             }

@@ -33,15 +33,6 @@ class ScrumColumnAdapter(val context: Context, dragOperation: BobBoardDragOperat
         return cards[position].id.hashCode().toLong()
     }
 
-    override fun swapItems(fromPosition: Int, toPosition: Int) {
-        val s = cards.map(UserStory::id).joinToString()
-        Log.d("TEST", "cards: $s")
-        super.swapItems(fromPosition, toPosition)
-
-        val t = cards.map(UserStory::id).joinToString()
-        Log.d("TEST", "cards: $t")
-    }
-
     override fun onBindViewHolder(holder: ScrumUserStoryViewHolder, position: Int) {
         val userStory = cards[position]
         holder.overlay.visibility = View.INVISIBLE
@@ -94,9 +85,6 @@ class ScrumColumnAdapter(val context: Context, dragOperation: BobBoardDragOperat
     }
 
     override fun onViewAttachedToWindow(viewHolder: ScrumUserStoryViewHolder) {
-        Log.d("TEST", "dragoperation card index: ${dragOperation.cardIndex}, " +
-                "adapter position ${viewHolder.adapterPosition}")
-
         //TODO we want to generalise this redisplay logic so that any views that don't remove the
         //card during drag can have it for free
         if (columnContainingDragTargetRedisplaying && viewHolder.adapterPosition == dragOperation.cardIndex) {
